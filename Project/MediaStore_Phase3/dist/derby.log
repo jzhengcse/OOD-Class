@@ -1,0 +1,13 @@
+----------------------------------------------------------------
+Thu Jun 19 10:28:41 EDT 2014:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.10.1.1 - (1458268): instance a816c00e-0146-b487-8b8d-000008030ab0 
+on database directory /Users/Jason/Google Drive/CMPSC221/Project/MediaStore_Phase3/dist/MediaStoreDB with class loader sun.misc.Launcher$AppClassLoader@135fbaa4 
+Loaded from file:/Users/Jason/Google%20Drive/CMPSC221/Project/MediaStore_Phase3/dist/lib/derby.jar
+java.vendor=Oracle Corporation
+java.runtime.version=1.8.0-b132
+user.dir=/Users/Jason/Google Drive/CMPSC221/Project/MediaStore_Phase3/dist
+os.name=Mac OS X
+os.arch=x86_64
+os.version=10.9.2
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''

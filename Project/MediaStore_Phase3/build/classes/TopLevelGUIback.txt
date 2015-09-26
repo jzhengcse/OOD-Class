@@ -1,0 +1,2938 @@
+
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
+public class TopLevelGUI extends JFrame implements ActionListener, ChangeListener {
+    //DataBase
+
+    private String currentUserID;
+    private int maxMediaID;
+    private Connection dbConnection;
+    private Statement dbStatement;
+    private ResultSet dbResultSet;
+    // reserve for current user
+    private ResultSet currentUserResultSet;
+    private Statement currentUserStatement;
+    private String sql;
+    //Primary data
+    private MediaStore mediaStore1;
+    // TopLevelGUI
+    private JTabbedPane tabs;                // tabbed window
+    private JPanel movieTab;
+    private JPanel musicTab;
+    private JPanel audioBookTab;
+//    private JPanel accountPanel;
+    private JPanel purchaseHistoryTab; //tab for customer Account only
+    private JPanel userTab; //tab for Manager account only
+    private JPanel accountPanel; //left account panel
+    // Layout
+    private GridBagLayout layout;    // layout of applet
+    private GridBagConstraints constraints; //constraints for the layout
+    // GUI in the logout status
+//    private JTextField userName;
+    private JPasswordField passWord;
+    private JButton login;
+    private JButton logout;
+    // GUI for Customer Account
+    private JButton depositeButton;
+    private JButton addCustomerButton;
+    private JTextField userID;
+    private JTextField userName;
+    private JTextField userAddress;
+    private JTextField userCredit;
+    private JButton addMediaButton;
+    private JTextField mediaName;
+    private JTextField mediaAuthor;
+    private JTextField mediaTime;
+    private JTextField mediaGenre;
+    private JTextField mediaPrice;
+    private JTextField mediaYearOfRelease;
+    private JButton removeMediaButton;
+    private JButton purchaseMediaButton;
+    private JComboBox accountTypeJComboBox;
+    // feedback GUI
+    private JButton giveRateButton;
+    // used to initial the List
+    // used to display the info in the top of the account tab
+    private JLabel userInfoLabel;
+    private JLabel managerInfoLabel;
+    // get the uerIndex when login
+    private int userIndex;
+    private static final ArrayList<String> MovieCols = new ArrayList<>(Arrays.asList("Number", "Name", "Director", "Time", "Genre", "Ranking", "Price", "Num Sold", "Rating", "Year"));
+    private static final ArrayList<String> MusicCols = new ArrayList<>(Arrays.asList("Number", "Name", "Artist", "Time", "Genre", "Ranking", "Price", "Num Sold", "Rating"));
+    private static final ArrayList<String> AudioBookCols = new ArrayList<>(Arrays.asList("Number", "Name", "Author", "Time", "Genre", "Ranking", "Price", "Num Sold", "Rating"));
+    private static final ArrayList<String> PurchaseHistoryCols = new ArrayList<>(Arrays.asList("Number", "Type", "Name", "Author", "Time", "Genre", "Ranking", "Price", "Num Sold", "Rating", "Year"));
+    private static final ArrayList<String> UserCols = new ArrayList<>(Arrays.asList("Number", "UserID", "Name", "Credit", "Purchase#", "Address"));
+    private static final Object[] rateChoices = {"1", "2", "3", "4", "5"};
+    private String[] currentRow;
+//    private  String[] musicRow;
+//    private  String[]  audioBookRow;
+//    private Vector<Vector> movieData;
+//    private Vector<Vector> musicData;
+//    private Vector<Vector> audioBookData;
+//    private Vector<Vector> purchaseHistoryData;
+//    private Vector<Vector> userData;
+    private JTable movieTable;
+    private JTable musicTable;
+    private JTable audioBookTable;
+    private JTable purchaseHistoryTable;
+    private JTable userTable;
+    private JPanel addCustomerPanel;
+    private JPanel addMediaPanel;
+    private int selectedRow;
+    private JButton checkPurchaseHistoryButton;
+    private JPanel checkPurchaseHistoryPanel;
+    private JScrollPane purchaseHistoryScrollPane;
+    private FontMetrics myFontMetrics;
+    private Font myFont;
+    DatabaseMetaData dbMeta;
+    private String purchase_media_id;
+    private JPanel searchTab;
+    private JPanel searchTabSearchFieldPanel;
+    private JPanel searchTabTablePanel;
+    private JTextField searchName;
+    private JComboBox filterTypeJComboBox;
+    private JButton searchButton;
+    private JTable searchTable;
+    private JComboBox mediaTypeJComboBox;
+    private JPanel mediaYearOfReleasePanel;
+//    private  searchScrollPane;
+
+    public void updateSearchTablePanel() {
+        
+        searchTabTablePanel.removeAll();
+        searchTabTablePanel.validate();
+
+        searchTabTablePanel.setLayout(new BorderLayout());
+
+        MyTableModel searchTableModel = new MyTableModel();
+        searchTable = new JTable(searchTableModel);
+        for (int i = 0; i < PurchaseHistoryCols.size(); i++) {
+            searchTableModel.addColumn(PurchaseHistoryCols.get(i));
+        }
+        searchTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        searchTable.setRowSelectionAllowed(true);
+        searchTable.setColumnSelectionAllowed(false);
+        searchTable.setAutoCreateRowSorter(true);
+
+
+
+        searchTable.getColumnModel().getColumn(0).setPreferredWidth(40);
+        searchTable.getColumnModel().getColumn(2).setPreferredWidth(150);
+        searchTable.getColumnModel().getColumn(3).setPreferredWidth(100);
+        searchTable.getColumnModel().getColumn(5).setPreferredWidth(100);
+        searchTable.getColumnModel().getColumn(6).setPreferredWidth(40);
+        searchTable.getColumnModel().getColumn(8).setPreferredWidth(40);
+        JScrollPane searchScrollPane = new JScrollPane(searchTable);
+        searchTable.setFillsViewportHeight(true);
+
+        searchTabTablePanel.add(searchScrollPane, BorderLayout.CENTER);
+        searchTab.add(searchTabTablePanel, BorderLayout.CENTER);
+
+//        ArrayList<Integer> mediaIDList = mediaStore1.getCustomers().get(userIndex).getPurchaseHistory();
+//        purchase_media_id = "(";
+
+//        updateCurrentUserResultSet();
+
+//        mediaIDString += mediaIDList.get(0);
+//        for (int i = 1; i < mediaIDList.size(); i++) {
+//            mediaIDString = mediaIDString + ", " + mediaIDList.get(i).toString();
+//        }
+//        mediaIDString += ")";
+
+        int i;
+        try {
+            i = 0;
+
+            String searchString;
+//            if (searchName.getText().isEmpty()) {
+//                searchString = "%";
+//            } else {
+                searchString = "%" + searchName.getText() + "%";
+
+//            }
+            switch (filterTypeJComboBox.getSelectedIndex()) {
+
+                case 0:
+//                    select * from users where user_id like '%'
+//                    sql = String.format("select * from medias order by type, sold_num desc,name");
+
+                    sql = String.format("select * from medias where upper(name) like upper('%s') and available=1 order by type,name", searchString);
+                    break;
+                case 1:
+                    sql = String.format("select * from medias where upper(name) like upper('%s')  and type='movie' and available=1  order by type ,name", searchString);
+
+                    break;
+                case 2:
+                    sql = String.format("select * from medias where upper(name) like upper('%s')  and type='music' and available=1 order by type ,name", searchString);
+
+                    break;
+                case 3:
+                    sql = String.format("select * from medias where upper(name) like upper('%s')  and type='audioBook' and available=1 order by type ,name", searchString);
+
+                    break;
+
+
+
+
+            }
+
+
+
+
+            dbResultSet = dbStatement.executeQuery(sql);
+            while (dbResultSet.next()) {
+
+                String number = String.format("%d", i + 1);
+                String type = dbResultSet.getString("type");
+                String name = dbResultSet.getString("name");
+                String author = dbResultSet.getString("author");
+                String time = dbResultSet.getString("time");
+                String genre = dbResultSet.getString("genre");
+                String averageRanking = String.format("%d", dbResultSet.getInt("rank"));
+                String price = String.format("%.2f", dbResultSet.getDouble("price"));
+                String soldNum = String.format("%d", dbResultSet.getInt("sold_num"));
+                String rating = String.format("%.2f", dbResultSet.getDouble("rate"));
+                String year = String.format("%d", dbResultSet.getInt("year_released"));
+                String[] currentRow = {number, type, name, author, time, genre, averageRanking, price, soldNum, rating, year};
+                searchTableModel.addRow(currentRow);
+                i++;
+
+            }
+
+//            searchTab.add(searchTabTablePanel, BorderLayout.CENTER);
+
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        repaint();
+
+    }
+
+    public void initSearchTab() {
+
+//        searchTab = new JPanel();
+        searchTab.setLayout(new BorderLayout());
+        searchTabSearchFieldPanel = new JPanel();
+        searchTabSearchFieldPanel.setLayout(new FlowLayout());
+        searchTabTablePanel = new JPanel();
+        searchTabTablePanel.setLayout(new BorderLayout());
+
+
+
+        searchTabSearchFieldPanel.add(new JLabel("Name:"));
+        searchName = new JTextField(10);
+        searchTabSearchFieldPanel.add(searchName);
+
+
+        searchButton = new JButton("Search");
+        searchButton.addActionListener(this);
+        searchTabSearchFieldPanel.add(searchButton);
+
+
+        searchTabSearchFieldPanel.add(new JLabel("Filter:"));
+        filterTypeJComboBox = new JComboBox(new String[]{"All", "Movie", "Music", "AudioBook"});
+        filterTypeJComboBox.addActionListener(this);
+        filterTypeJComboBox.setMaximumRowCount(4);
+        filterTypeJComboBox.setPreferredSize(new Dimension(passWord.getPreferredSize().width, passWord.getPreferredSize().height));
+        searchTabSearchFieldPanel.add(filterTypeJComboBox);
+
+
+        searchTab.add(searchTabSearchFieldPanel, BorderLayout.NORTH);
+
+        updateSearchTablePanel();
+
+
+
+
+
+
+
+
+        repaint();
+    }
+
+    public TopLevelGUI() {
+        super("Media Store");
+
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                try {
+                    if (dbResultSet != null) {
+                        dbResultSet.close();
+                        System.out.println("close dbResultSet");
+                    }
+                    if (dbStatement != null) {
+                        dbStatement.close();
+                        System.out.println("close dbStatement");
+                    }
+                    if (dbConnection != null) {
+                        dbConnection.close();
+                        System.out.println("close dbConnection");
+                    }
+
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+                System.exit(0);
+
+            }
+        });
+
+
+
+
+
+//        this.addWindowListener(new WindowAdapter() {
+//            public void windowClosing(WindowEvent e) {
+//                Fram
+//            }
+//        });
+        dbConnection = null;
+        dbStatement = null;
+        dbResultSet = null;
+
+        setUpDB();
+        userInfoLabel = new JLabel(); //need here!!
+
+        // get the max mediaID from data base;
+
+        try {
+            sql = "select max(media_id) from medias";
+
+//            Statement tempStatement = dbConnection.createStatement();
+            dbResultSet = dbStatement.executeQuery(sql);
+            if (dbResultSet.next()) {
+                maxMediaID = dbResultSet.getInt(1);
+            } else {
+                System.out.println("error when get the max media_id");
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+//        mediaID=0;
+//        Class.forName("org.apache.derby.jdbc.MyDataBase").newInstance(); 
+//       new JScrollPane();
+        mediaStore1 = new MediaStore("jiz5118", "Jie", "College Ave, State College", "123"); //ID, userName , userAddress , password
+        tabs = new JTabbedPane();
+
+        this.setResizable(
+                false);
+
+//        accountPanel = new JPanel(); // set up first tab
+//        tabs.addTab("Account", null, accountPanel, "The Account Tab");
+
+
+        movieTab = new JPanel();
+
+        tabs.addTab(
+                "Movie", null, movieTab, "The Movie tab");
+
+        musicTab = new JPanel();
+
+        tabs.addTab(
+                "Music", null, musicTab, "The Music tab");
+
+        audioBookTab = new JPanel();
+
+        tabs.addTab(
+                "AudioBook", null, audioBookTab, "The AudioBook Tab");
+
+        searchTab = new JPanel();
+
+        tabs.addTab(
+                "Search", null, searchTab, "Search Media Tab");
+
+        add(tabs, BorderLayout.CENTER);    // put tab system in application
+
+        tabs.addChangeListener(
+                this);
+        accountPanel = new JPanel();
+//        add(accountPanel,BorderLayout.WEST);
+
+        accountPanel.setPreferredSize(
+                new Dimension(300, 800));
+        add(accountPanel, BorderLayout.WEST);
+        myFont = getFont();
+//        myFontMetrics=getFontMetrics(myFont);
+
+        logout();
+
+        initSearchTab();
+
+        updateLibrary();
+//        purchaseMediaButton = new JButton("Purchase"); //for the state change
+//
+//        giveRateButton = new JButton("FeedBack");
+    }
+//    /**
+//     * search the customer in the vector
+//     *
+//     * @param customers
+//     * @param ID
+//     * @return the index of customer in the ArrayList if found; return -1
+//     * otherwise
+//     */
+//    public boolean foundCustomer(String ID) {
+//
+//
+//        sql = String.format("select * from users where user_id='%s'", ID);
+//        try {
+//            ResultSet dbResultSet = dbStatement.executeQuery(sql);
+//
+//            if (dbResultSet.next()) {
+//                return true;
+//            } else {
+//                return false;
+//            }
+//        } catch (SQLException ex) {
+//            ex.printStackTrace();
+//            return false;
+//        }
+//
+//    }
+//    /**
+//     * search whether certain media is in the library
+//     *
+//     * @param mediaObjects
+//     * @param name
+//     * @return index of media object in the ArrayList if found; other return -1
+//     * (not found)
+//     */
+//    public boolean foundMedia(String name, String type) {
+//        sql = String.format("select * from medias where name='%s' and type='%d'", name, type);
+//        try {
+//            ResultSet dbResultSet = dbStatement.executeQuery(sql);
+//            if (dbResultSet.next()) {
+//                return true;
+//            } else {
+//                return false;
+//            }
+//        } catch (SQLException ex) {
+//            ex.printStackTrace();
+//            return false;
+//        }
+//    }
+
+    /**
+     * add a customer to verctor
+     *
+     * @param customers
+     * @param customer
+     */
+    public void addCustomer(Customer customer) {
+        sql = String.format("select * from users where user_id='%s'", customer.ID);
+        try {
+
+            dbResultSet = dbStatement.executeQuery(sql);
+            if (dbResultSet.next()) {//find it
+                System.out.printf("%s already exist \n", customer.ID);
+                JOptionPane.showMessageDialog(null, "Account with User ID \"" + customer.ID + "\" is already exist", null, JOptionPane.WARNING_MESSAGE);
+            } else { //not found add it
+                sql = String.format("insert into users (user_id,name,credit,purchase_num,address)"
+                        + "values ('%s','%s',%.2f,%d,'%s')", customer.ID, customer.name, customer.credit, customer.numberPurchase, customer.address);
+                dbStatement.execute(sql);
+//                customers.add(customer);
+                System.out.printf("You add a customer with ID: %s \n", customer.ID);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+//
+//        if (foundCustomer(customer.ID) != -1) { // ID already exist
+//            System.out.printf("%s already exist \n", customer.ID);
+//            JOptionPane.showMessageDialog(null, "Account with User ID \"" + customer.ID + "\" is already exist", null, JOptionPane.WARNING_MESSAGE);
+//
+//        } else {
+//
+////            customers.add(customer);
+//            System.out.printf("You add a customer with ID: %s \n", customer.ID);
+//        }
+    }
+
+    public void addMedia(Media media) {
+        sql = String.format("select * from medias where name='%s' and type='%s'", media.name, media.getType());
+        try {
+            dbResultSet = dbStatement.executeQuery(sql);
+            if (dbResultSet.next()) { //found it reactive it
+                if (dbResultSet.getInt("available") == 0) {
+                    sql = String.format("update medias set available=1 where name='%s' and type='%s'", media.name, media.getType());
+                    dbStatement.execute(sql);
+//                    mediaObjects.get(foundIndex).avaliable = true;
+                    System.out.printf("%s has been readd \n", media.name);
+                    JOptionPane.showMessageDialog(null, String.format("%s has been readd \n", media.name), null, JOptionPane.WARNING_MESSAGE);
+                } else {
+
+                    System.out.printf("%s already exist \n", media.name);
+                    JOptionPane.showMessageDialog(null, String.format("%s already exist \n", media.name), null, JOptionPane.WARNING_MESSAGE);
+
+                }
+            } else { //did not find it add it.
+                System.out.println(maxMediaID);
+                maxMediaID++;
+                System.out.println(maxMediaID);
+
+                media.mediaID = maxMediaID;
+
+
+                sql = String.format("insert into medias (media_id,available,type,name,author,time,genre,rank,price,sold_num,rate_num,rate,rate_total,year_released)"
+                        + "values (%d,%d,'%s','%s','%s','%s','%s',%d,%.2f,%d,%d,%.2f,%.2f,%d)", media.mediaID, media.avaliable, media.getType(), media.name, media.author, media.time, media.genre, media.rank, media.price, media.soldNum, media.rateNum, media.rate, media.rateTotal, media.getYear());
+                dbStatement.execute(sql);
+
+//                mediaObjects.add(media);
+//                media.mediaID = mediaID;
+//                mediaID++;
+
+
+
+                // allocate memory for an Album and add it to albums array
+                //		albums[Album.getNumberOfAlbum()]=new Album(artist,name,time,genre,rank,price,soldNum); 
+                System.out.printf("%s: %s has been added \n", media.getType(), media.name);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+//}
+
+    /**
+     * remove media from mediaObject vector if found
+     *
+     * @param mediaObjects
+     * @param name
+     */
+    public void removeMedia(String name, String type) {
+
+        sql = String.format("select * from medias where name='%s' and type='%s'", name, type);
+        try {
+            dbResultSet = dbStatement.executeQuery(sql);
+            if (dbResultSet.next()) { //found it and remove it from mediaObjects vector
+                if (dbResultSet.getInt("available") == 1) {
+                    sql = String.format("update medias set available=0 where name='%s' and type='%s'", name, type);
+                    dbStatement.execute(sql);
+//                    mediaObjects.get(foundIndex).avaliable = true;
+                    System.out.printf("%s has been removed \n", name);
+
+//                    JOptionPane.showMessageDialog(null, String.format("%s has been readd \n", media.name), null, JOptionPane.WARNING_MESSAGE);
+                } else {
+
+                    System.out.printf("%s was removed before\n", name);
+                    JOptionPane.showMessageDialog(null, String.format("%s was removed before\n", name), null, JOptionPane.WARNING_MESSAGE);
+
+                }
+            } else { // not found
+                System.out.printf("%s can't not be found in library \n", name);
+                JOptionPane.showMessageDialog(null, String.format("%s can't not be found in library \n", name), null, JOptionPane.WARNING_MESSAGE);
+
+//                mediaObjects.add(media);
+//                media.mediaID = mediaID;
+//                mediaID++;
+
+
+
+                // allocate memory for an Album and add it to albums array
+                //		albums[Album.getNumberOfAlbum()]=new Album(artist,name,time,genre,rank,price,soldNum); 
+
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public void updateCurrentUserResultSet() {
+
+        try {
+            sql = String.format("select * from users where user_id='%s'", currentUserID);
+
+            currentUserResultSet = currentUserStatement.executeQuery(sql);
+            if (currentUserResultSet.next()) {
+                System.out.println("can find the user_ID");
+                userInfoLabel.setText(String.format("<html><br>User Information: </br> <br>Account ID: %s</br>  <br>Name: %s  </br>  <br>Credit %.2f</br> <br>Number of Purchase: %d  </br> <br>Address: %s  </br> </html>", currentUserResultSet.getString("user_id"), currentUserResultSet.getString("name"), currentUserResultSet.getDouble("credit"), currentUserResultSet.getInt("purchase_num"), currentUserResultSet.getString("address")));
+
+
+            } else {
+                System.out.println("can't find the user_ID");
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    /**
+     * display total Sale from the media store
+     *
+     * @param medisObjects
+     */
+    public double CheckTotalSale() {
+        sql = "select sum(sold_num*price) total_sale from medias";
+        try {
+            dbResultSet = dbStatement.executeQuery(sql);
+            dbResultSet.next();
+            return dbResultSet.getDouble(1);
+
+//            return dbResultSet.getDouble("sum(sold_num*price)");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return 0;
+        }
+
+    }
+//
+//    /**
+//     * computer the rate by sumOfFeedBak/numberOfFeedBack
+//     */
+//    public void updateRate(String name, String type) {
+////        Statement tempStatement;
+//        try {
+////            tempStatement = dbConnection.createStatement();
+//            sql = String.format("update medias set rate=rate_total/rate_num where name='%s' and type='%s'", name, type);
+//            dbStatement.execute(sql);
+//        } catch (SQLException ex) {
+//            ex.printStackTrace();
+//        }
+////        ResultSet tempResultSet=tempStatement.executeQuery(sql);
+//
+//
+//
+////
+////        double sum = 0;
+////        for (int i = 0; i < feedBack.size(); i++) {
+////            sum += feedBack.get(i); //loop over the vector and get sum of all rate
+////        }
+////        rate = sum / (double) (feedBack.size()); //get the average of rate
+//    }
+
+//    
+    public boolean ifRated(int mediaID) {
+
+        Statement tempStatement = null;
+        ResultSet tempResultSet = null;
+
+
+
+
+
+
+        try {
+            sql = String.format("select * from rates where media_id=%d", mediaID);
+            tempStatement = dbConnection.createStatement();
+            tempResultSet = tempStatement.executeQuery(sql);
+            while (tempResultSet.next()) {
+                if (tempResultSet.getString("user_id").equals(currentUserID)) {
+                    return true; //rated
+                }
+            }
+            return false; //not rate
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return true; //error return anything
+        } finally {
+            try {
+                if (tempResultSet != null) {
+                    tempResultSet.close();
+                }
+                if (tempStatement != null) {
+                    tempStatement.close();
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        }
+
+//        
+//        int i = 0;
+//        while (i < feedBackUserID.size() && !(feedBackUserID.get(i).equals(userID))) {
+//            i++;
+//        }
+//        return i < feedBackUserID.size();
+
+    }
+
+    /**
+     * customer can giveRate after he/she has purchased it
+     *
+     * @param mediaObjects
+     * @param name
+     */
+    public void giveRate(String name, String type) {
+//        sql = String.format("select * from medias where name='%s' and type='%s'", name, type);
+//        Statement tempStatement1;
+//        ResultSet resultSet1;
+//        int temptMediaID;
+        try {
+            sql = String.format("select * from medias where name='%s' and type='%s'", name, type);
+
+//            tempStatement1 = dbConnection.createStatement();
+            dbResultSet = dbStatement.executeQuery(sql);
+//            temptMediaID=
+            if (dbResultSet.next()) {//found in the library
+                if (ifRated(dbResultSet.getInt("media_id"))) {
+                    JOptionPane.showMessageDialog(null, "You already rate it before", null, JOptionPane.WARNING_MESSAGE);//show never happen
+
+
+                } else {
+
+
+                    String feedBack = (String) JOptionPane.showInputDialog(null, "Rate this media", "Feedback", JOptionPane.PLAIN_MESSAGE, null, rateChoices, rateChoices[4]);
+                    if (feedBack != null) {
+
+
+                        sql = String.format("insert into rates (media_id,user_id) values (%d,'%s')", dbResultSet.getInt("media_id"), currentUserID);
+                        dbStatement.execute(sql); // add to customer's purchaseHisotry
+
+                        sql = String.format("update medias set rate_total=rate_total+%d, rate_num=rate_num+1 where name='%s' and type='%s'", Integer.parseInt(feedBack), name, type);
+                        dbStatement.execute(sql);
+
+//                    mediaObjects.get(foundIndex).feedBack.add(feedback); // add rate to rate_total
+//                    //increase the rate_num
+
+                        sql = String.format("update medias set rate=rate_total/rate_num where name='%s' and type='%s'", name, type);
+                        dbStatement.execute(sql);//update the rate
+
+
+
+
+
+//                        sql = String.format("update medias set rate_user_id=rate_user_id||',''%s''' where name='%s' and type='%s'", currentUserID, name, type);
+//                        dbStatement.execute(sql); // add to customer's purchaseHisotry
+
+                        updateLibrary();
+                        updatePurchaseHistoryTab();
+
+                    }
+
+
+
+
+
+                }
+            } else {
+                JOptionPane.showMessageDialog(null, "can't find it in the library", null, JOptionPane.WARNING_MESSAGE);//show never happen
+                System.out.printf("Can't find %s in the library \n", name);
+
+            }
+
+
+
+
+
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+//        if (foundIndex
+//                != -1) { //found in the library
+//            if (mediaObjects.get(foundIndex).ifRated(ID)) {
+//                JOptionPane.showMessageDialog(null, "You already rate it before", null, JOptionPane.WARNING_MESSAGE);//show never happen
+//
+//            } else {
+//                mediaObjects.get(foundIndex).feedBack.add(feedback); // add feedback to feedBack ArrayList
+//                mediaObjects.get(foundIndex).feedBackUserID.add(ID); // add id to the feedBackUserID ArrayList
+//                mediaObjects.get(foundIndex).updateRating(); //update the rate
+//            }
+//
+//        } else {
+//            JOptionPane.showMessageDialog(null, "can't find it in the library", null, JOptionPane.WARNING_MESSAGE);//show never happen
+//            System.out.printf("Can't find %s in the library \n", name);
+//
+//
+//
+//        }
+    /**
+     * test whether media has been purchased
+     *
+     * @param media
+     * @return true if it has been purchased;false otherwise
+     */
+    public boolean ifPurchased(int mediaID) {
+
+        Statement tempStatement = null;
+        ResultSet tempResultSet = null;
+        try {
+            sql = String.format("select * from purchases where user_id='%s'", currentUserID);
+            tempStatement = dbConnection.createStatement();
+            tempResultSet = tempStatement.executeQuery(sql);
+            while (tempResultSet.next()) {
+                if (tempResultSet.getInt("media_id") == mediaID) {
+                    return true;
+                }
+            }
+            return false;
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        } finally {
+            try {
+                if (tempResultSet != null) {
+                    tempResultSet.close();
+                }
+                if (tempStatement != null) {
+                    tempStatement.close();
+
+                }
+
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+
+        }
+
+
+    }
+
+    /**
+     * purchase the media if it's found in the MediaStore, it has not been
+     * purchased by this customer and the customer has enough credit
+     *
+     * @param mediaObjects
+     * @param name
+     */
+    public void purchase(String name, String type) {
+
+        Statement tempStatement = null;
+//            sql = String.format("select * from medias where media_id in  (%s)", currentUserResultSet.getString("purchase_media_id"));
+//
+//            ResultSet dbResultSet = dbStatement.executeQuery(sql);   
+
+        sql = String.format("select * from medias where name='%s' and type='%s'", name, type);
+        try {
+            dbResultSet = dbStatement.executeQuery(sql);
+//            ResultSet tempResultSet=dbResultSet;
+            if (!dbResultSet.next()) {//not found in the library
+                System.out.printf("Can't find %s in the library \n", name);
+            } else if (ifPurchased(dbResultSet.getInt("media_id"))) {
+                System.out.printf("You already purchased %s \n", name);
+                JOptionPane.showMessageDialog(null, "You already purhcase " + name + " before", null, JOptionPane.WARNING_MESSAGE);
+            } else if (currentUserResultSet.getDouble("credit") >= dbResultSet.getDouble("price")) {
+//                currentUserResultSet.getDouble("credit") >= dbResultSet.getDouble("price")
+
+//                mediaStore1.getCustomers().get(userIndex).credit -= dbResultSet.getDouble("price"); 
+                tempStatement = dbConnection.createStatement();
+                sql = String.format("update users set credit=credit-%f where user_id='%s'", dbResultSet.getDouble("price"), currentUserID);
+
+                tempStatement.execute(sql); //deducts album price from credit
+
+                sql = String.format("insert into purchases (user_id,media_id) values ('%s',%d)", currentUserID, dbResultSet.getInt("media_id"));
+                tempStatement.execute(sql); // add to customer's purchaseHisotry          
+
+
+//                sql = String.format("update users set purchase_media_id=purchase_media_id||',%d' where user_id='%s'", dbResultSet.getInt("media_id"), currentUserID);
+//                tempStatement.execute(sql); // add to customer's purchaseHisotry
+
+
+//                mediaStore1.getCustomers().get(userIndex).getPurchaseHistory().add(dbResultSet.getInt("mediaID"));// add to customer's purchaseHisotry
+
+                sql = String.format("update medias set sold_num=sold_num+1 where name='%s' and type='%s'", name, type);
+                tempStatement.execute(sql); //increase number sold for this particular album
+                System.out.println("purchase_num increase");
+
+                sql = String.format("update users set purchase_num=purchase_num+1 where user_id='%s'", currentUserID);
+                tempStatement.execute(sql); //increase purchase_num
+
+//                updateCurrentUserResultSet(); //dirty jobs
+//                updateLibrary();
+//                updateAverageRanking();
+//                updateLibrary();
+//
+//                updatePurchaseHistoryTab();
+
+
+                updateCurrentUserResultSet(); //dirty jobs
+                updateLibrary();
+                updatePurchaseHistoryTab();
+//                userInfoLabel.setText(String.format("<html><br>User Information: </br> <br>Account ID: %s</br>  <br>Name: %s  </br>  <br>Credit %.2f</br> <br>Number of Purchase: %d  </br> <br>Address: %s  </br> </html>", currentUserResultSet.getString("user_id"), currentUserResultSet.getString("name"), currentUserResultSet.getDouble("credit"), currentUserResultSet.getInt("purchase_num"), currentUserResultSet.getString("address")));
+//                mediaObjects.get(foundIndex).soldNum++; //increase number sold for this particular album
+                System.out.printf("%s has been purchased \n", name);
+            } else {
+                JOptionPane.showMessageDialog(null, "You don't have enough credit", null, JOptionPane.WARNING_MESSAGE);
+
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        } finally {
+
+            try {
+                if (tempStatement != null) {
+                    tempStatement.close();
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+
+        }
+
+    }
+
+    public void setUpDB() {
+        try {
+            // start Derby engine
+            String driver = "org.apache.derby.jdbc.EmbeddedDriver";
+            Class.forName(driver).newInstance();
+            String protocol = "jdbc:derby:";
+            String dbName = "MediaStoreDB";
+            dbConnection = DriverManager.getConnection("jdbc:derby:MediaStoreDB; create=true");
+//            dbConnection.setAutoCommit(false);
+            dbStatement = dbConnection.createStatement();
+            currentUserStatement = dbConnection.createStatement();
+
+            // test to see if we need to run the initial squl script
+            dbMeta = dbConnection.getMetaData();
+            String[] tableTypes = {"TABLE"};
+            dbResultSet = dbMeta.getTables(null, null, "%", tableTypes);
+
+
+
+
+
+
+
+
+
+
+            if (!dbResultSet.next()) {
+                // no table found, we need to execut the initial sql statments
+                // first read the sql script
+                InputStream is = TopLevelGUI.class
+                        .getResourceAsStream("init.sql");
+                InputStreamReader isr = new InputStreamReader(is);
+                BufferedReader br = new BufferedReader(isr);
+                StringBuilder sb = new StringBuilder();
+                String line;
+                line = br.readLine();
+                while (line
+                        != null) {
+                    sb.append(line);
+                    if (line.contains(";")) {
+                        sql = sb.toString();
+                        sb = new StringBuilder();
+                        // executeQuery cannot process ; so remove it from sql
+                        sql = sql.substring(0, sql.indexOf(';'));
+                        // run sql here
+                        if (sql.toUpperCase().contains("SELECT")) {
+                            dbStatement.executeQuery(sql);
+                        } else {
+                            dbStatement.execute(sql);
+                        }
+                    }
+                    line = br.readLine();
+                }
+            }
+// test
+            sql = "select * from users";
+            dbResultSet = dbStatement.executeQuery(sql);
+            while (dbResultSet.next()) {
+                System.out.println(dbResultSet.getString("user_id"));
+            }
+            sql = "select * from medias";
+            dbResultSet = dbStatement.executeQuery(sql);
+            while (dbResultSet.next()) {
+                System.out.println(dbResultSet.getString("name"));
+            }
+
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+            // could not start Derby engine
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (SQLException e) {
+            // could not connect to Derby
+            e.printStackTrace();
+        }
+
+    }
+
+    public void logout() {
+
+        accountPanel.removeAll();
+        accountPanel.validate();
+
+
+        layout = new GridBagLayout();
+        constraints = new GridBagConstraints();
+        accountPanel.setLayout(layout); // set up layout
+
+        constraints.fill = GridBagConstraints.BOTH; // define constraints for button
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        constraints.weightx = 1;
+        constraints.weighty = 1;
+        constraints.gridwidth = 1;
+        constraints.gridheight = 1;
+        constraints.insets = new Insets(40, 40, 0, 40);
+
+
+
+
+        // panel 1
+        JPanel accountLoginPanel = new JPanel();
+        accountLoginPanel.setLayout(new GridLayout(4, 1, 0, 8));
+
+        JPanel userNamePanel = new JPanel();
+        userNamePanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+        userNamePanel.add(new JLabel("UserID:"));
+        userID = new JTextField(10);
+        userNamePanel.add(userID);
+
+        JPanel passwordPanel = new JPanel();
+        passwordPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+        passwordPanel.add(new JLabel("PassWord:"));
+        passWord = new JPasswordField(10);
+        passwordPanel.add(passWord);
+
+
+//        panel 2
+        JPanel accountTypePanel = new JPanel();
+        accountTypePanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+
+        accountTypeJComboBox = new JComboBox(new String[]{"Customer", "Manager"});
+        accountTypeJComboBox.setMaximumRowCount(2);
+
+        accountTypeJComboBox.setPreferredSize(new Dimension(passWord.getPreferredSize().width, passWord.getPreferredSize().height));
+        accountTypePanel.add(new JLabel("        Type:"));
+        accountTypePanel.add(accountTypeJComboBox);
+
+//        userAccount = new JRadioButton("User Account", true);
+//        ManagerAccount = new JRadioButton("Manager Account", false);
+//        ButtonGroup myButtonGroup = new ButtonGroup();
+//        myButtonGroup.add(userAccount);
+//        myButtonGroup.add(ManagerAccount);
+//        accountTypePanel.add(userAccount);
+//        accountTypePanel.add(ManagerAccount);
+
+
+        login = new JButton("Login");
+        login.addActionListener(this);
+//        login.setPreferredSize(null);
+
+
+        accountLoginPanel.add(userNamePanel);
+        accountLoginPanel.add(passwordPanel);
+        accountLoginPanel.add(accountTypePanel);
+//        accountLoginPanel.add(ManagerAccount);
+        accountLoginPanel.add(login);
+
+
+        accountPanel.add(accountLoginPanel, constraints);
+
+
+
+
+//        constraints.gridy = 1;
+//        accountPanel.add(accountTypePanel, constraints);
+
+        // add some empty panel to push the first two panels up 
+        for (int i = 2; i < 8; i++) {
+            constraints.gridy = i;
+            accountPanel.add(new JPanel(), constraints);
+        }
+
+        // if already login() remove the addition panel
+//        if (tabs.getTabCount() == 5) {
+//            tabs.removeTabAt(tabs.getTabCount()-1);
+//            tabs.removeTabAt(tabs.getTabCount()-1);
+//            tabs.validate();
+//        }
+
+        if (tabs.getTabCount() == 5) {
+            tabs.removeTabAt(tabs.getTabCount() - 1);
+            tabs.validate();
+        }
+
+        repaint();
+
+    }
+
+    public void loginUserAccount() {
+
+        accountPanel.removeAll();
+        accountPanel.validate();
+
+
+        constraints.fill = GridBagConstraints.BOTH; // define constraints for button
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        constraints.weightx = 1;
+        constraints.weighty = 1;
+        constraints.gridwidth = 1;
+        constraints.gridheight = 1;
+        constraints.insets = new Insets(20, 40, 20, 40);
+
+        // add row1
+
+//        String userInfo;
+//        try {
+//
+////            currentUserID = currentUserResultSet.getString("user_id");
+////            purchase_media_id = currentUserResultSet.getString("purchase_media_id");
+////            userInfo = String.format("<html><br>User Information: </br> <br>Account ID: %s</br>  <br>Name: %s  </br>  <br>Credit %.2f</br> <br>Number of Purchase: %d  </br> <br>Address: %s  </br> </html>", currentUserResultSet.getString("user_id"), currentUserResultSet.getString("name"), currentUserResultSet.getDouble("credit"), currentUserResultSet.getInt("purchase_num"), currentUserResultSet.getString("address"));
+//            userInfoLabel = new JLabel(String.format("<html><br>User Information: </br> <br>Account ID: %s</br>  <br>Name: %s  </br>  <br>Credit %.2f</br> <br>Number of Purchase: %d  </br> <br>Address: %s  </br> </html>", currentUserResultSet.getString("user_id"), currentUserResultSet.getString("name"), currentUserResultSet.getDouble("credit"), currentUserResultSet.getInt("purchase_num"), currentUserResultSet.getString("address")));
+//        } catch (SQLException ex) {
+//            ex.printStackTrace();
+//        }
+
+
+
+//        userInfoLabel = new JLabel();
+        updateCurrentUserResultSet();
+        accountPanel.add(userInfoLabel, constraints);
+
+        //add row2
+        constraints.insets = new Insets(20, 40, 20, 40);
+        constraints.gridy = 1;
+        constraints.gridwidth = 1;
+
+//        JPanel depositAmountPanel = new JPanel();
+//        depositAmountPanel.add(new JLabel("Amount: "));
+//        depositAmount = new JTextField(10);
+//        depositAmountPanel.add(depositAmount);
+//        accountPanel.add(depositAmountPanel, constraints);
+
+        //add row3
+        constraints.gridy = 1;
+        constraints.gridwidth = 1;
+
+        depositeButton = new JButton("Deposit");
+        depositeButton.addActionListener(this);
+        accountPanel.add(depositeButton, constraints);
+
+
+        constraints.gridy = 2;
+//        purchaseMediaButton = new JButton("购买");
+        purchaseMediaButton = new JButton("Purchase");
+        purchaseMediaButton.addActionListener(this);
+        accountPanel.add(purchaseMediaButton, constraints);
+
+        //add row4
+        constraints.gridy = 3;
+        giveRateButton = new JButton("Rate");
+        giveRateButton.addActionListener(this);
+        giveRateButton.setVisible(false);
+//        giveRateButton.setEnabled(false);
+        accountPanel.add(giveRateButton, constraints);
+
+
+
+        //add row5
+        constraints.gridy = 4;
+        logout = new JButton("Logout");
+        logout.addActionListener(this);
+        accountPanel.add(logout, constraints);
+
+
+        // add empty panel to push up the coontent
+        for (int i = 5; i < 10; i++) {
+            constraints.gridy = i;
+            accountPanel.add(new JPanel(), constraints);
+        }
+
+        // add addition tab for customer account
+        purchaseHistoryTab = new JPanel();
+        tabs.addTab("Purchased", null, purchaseHistoryTab);
+
+
+
+
+        // initialize the history tab
+        updatePurchaseHistoryTab();
+        repaint();
+
+    }
+
+    public void loginManagerAccount() {
+        accountPanel.removeAll();
+        accountPanel.validate();
+
+
+        constraints.fill = GridBagConstraints.BOTH; // define constraints for button
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        constraints.weightx = 1;
+        constraints.weighty = 1;
+        constraints.gridwidth = 1;
+        constraints.gridheight = 1;
+        constraints.insets = new Insets(20, 40, 20, 40);
+
+        // add row1
+        managerInfoLabel = new JLabel("<html><br>Manager Information: </br>" + mediaStore1.getManager().toString()
+                + "<br>Store TotalSale:" + String.format("%.2f", CheckTotalSale()) + "</br></html>");
+        accountPanel.add(managerInfoLabel, constraints);
+
+
+
+
+
+
+
+//        retrieveCustomerInfo = new JButton("Retrieve Customer Information");
+//        retrieveCustomerInfo.addActionListener(this);
+//        accountPanel.add(retrieveCustomerInfo, constraints);
+
+
+//        JPanel customerNamePanel = new JPanel();
+//        customerNamePanel.add(new JLabel("UerID"));
+//        customerName = new JTextField(10);
+//        customerNamePanel.add(customerName);
+//        constraints.gridx = 1;
+//        accountPanel.add(customerNamePanel, constraints);
+
+        // add row2
+        constraints.insets = new Insets(20, 40, 20, 40);
+        constraints.gridx = 0;
+        constraints.gridy = 1;
+        removeMediaButton = new JButton("Remove Media");
+        removeMediaButton.addActionListener(this);
+        accountPanel.add(removeMediaButton, constraints);
+
+        constraints.gridx = 0;
+        constraints.gridy = 2;
+        checkPurchaseHistoryButton = new JButton("Purchase History");
+        checkPurchaseHistoryButton.setVisible(false);
+//        checkPurchaseHistoryButton.setEnabled(false);
+        checkPurchaseHistoryButton.addActionListener(this);
+        accountPanel.add(checkPurchaseHistoryButton, constraints);
+
+
+        // add row4
+
+        constraints.gridx = 0;
+        constraints.gridy = 3;
+        constraints.gridheight = 1;
+        addMediaButton = new JButton("Add Media");
+        addMediaButton.addActionListener(this);
+
+
+        accountPanel.add(addMediaButton, constraints);
+
+        // add row5
+        constraints.gridx = 0;
+        constraints.weightx = 1;
+        constraints.gridy = 4;
+        addCustomerButton = new JButton("Add Customer");
+        addCustomerButton.addActionListener(this);
+        accountPanel.add(addCustomerButton, constraints);
+
+
+        
+
+        // add row6
+        constraints.gridx = 0;
+        constraints.gridy = 5;
+        logout = new JButton("Logout");
+        logout.addActionListener(this);
+        accountPanel.add(logout, constraints);
+
+
+
+        // add empty panel to push up the coontent
+        for (int i = 6; i < 10; i++) {
+            constraints.gridy = i;
+            accountPanel.add(new JPanel(), constraints);
+        }
+
+
+        // add addition tab for manager account
+        userTab = new JPanel();
+        tabs.addTab("User Account", null, userTab);
+
+//        saleSummaryTab=new JPanel();
+
+
+//        repaint();
+        updateUserTab();
+        repaint();
+//        accountPanel.validate();
+
+//        constraints.gridx = 1;
+//        JPanel userIDPanel = new JPanel();
+//        userIDPanel.add(new JLabel("UerID:"));
+//        userID = new JTextField(10);
+//        userIDPanel.add(userID, constraints);
+//        accountPanel.add(userIDPanel, constraints);
+
+
+//        constraints.gridx = 2;
+//        JPanel namePanel = new JPanel();
+//        namePanel.add(new JLabel("Name:"));
+//        userName = new JTextField(10);
+//        namePanel.add(userName, constraints);
+//        accountPanel.add(namePanel, constraints);
+
+//        constraints.gridx = 3;
+//        JPanel addressPanel = new JPanel();
+//        addressPanel.add(new JLabel("Address:"));
+//        userAddress = new JTextField(10);
+//        addressPanel.add(userAddress, constraints);
+//        accountPanel.add(addressPanel, constraints);
+//
+//
+//        constraints.gridx = 4;
+//        JPanel creditPanel = new JPanel();
+//        creditPanel.add(new JLabel("Credit:"));
+//        userCredit = new JTextField(10);
+//        creditPanel.add(userCredit, constraints);
+//        accountPanel.add(creditPanel, constraints);
+
+
+
+
+//        constraints.gridheight = 1;
+//        constraints.gridx = 1;
+//
+//        JPanel mediaNamePanel = new JPanel();
+//        mediaNamePanel.add(new JLabel("Name:"));
+//        mediaName = new JTextField(10);
+//        mediaNamePanel.add(mediaName);
+//        accountPanel.add(mediaNamePanel, constraints);
+//
+//        constraints.gridx = 2;
+//        JPanel mediaAuthorPanel = new JPanel();
+//        mediaAuthorPanel.add(new JLabel("Author:"));
+//        mediaAuthor = new JTextField(10);
+//        mediaAuthorPanel.add(mediaAuthor);
+//        accountPanel.add(mediaAuthorPanel, constraints);
+
+//
+//        constraints.gridx = 3;
+//        JPanel mediaTimePanel = new JPanel();
+//        mediaTimePanel.add(new JLabel("Time:"));
+//        mediaTime = new JTextField(10);
+//        mediaTimePanel.add(mediaTime);
+//        accountPanel.add(mediaTimePanel, constraints);
+//
+//
+//        constraints.gridx = 4;
+//        JPanel mediaGenrePanel = new JPanel();
+//        mediaGenrePanel.add(new JLabel("Genre:"));
+//        mediaGenre = new JTextField(10);
+//        mediaGenrePanel.add(mediaGenre);
+//        accountPanel.add(mediaGenrePanel, constraints);
+
+
+//        constraints.gridx = 1;
+//        constraints.gridy = 4;
+//        JPanel mediaPricePanel = new JPanel();
+//        mediaPricePanel.add(new JLabel("Price:"));
+//        mediaPrice = new JTextField(10);
+//        mediaPricePanel.add(mediaPrice);
+//        accountPanel.add(mediaPricePanel, constraints);
+//
+//
+//        constraints.gridx = 2;
+//        JPanel mediaYearOfReleasePanel = new JPanel();
+//        mediaYearOfReleasePanel.add(new JLabel("Year:"));
+//        mediaYearOfRelease = new JTextField(10);
+//        mediaYearOfRelease.setText("Movie Only");
+//        mediaYearOfReleasePanel.add(mediaYearOfRelease);
+//        accountPanel.add(mediaYearOfReleasePanel, constraints);
+//
+//        constraints.gridx = 3;
+//
+//        JPanel mediaTypePanel = new JPanel();
+//        addMovie = new JRadioButton("Movie", true);
+//        addAlbum = new JRadioButton("Music");
+//        addAudioBook = new JRadioButton("AudioBook");
+//        addMovie.addActionListener(this);
+//        addAlbum.addActionListener(this);
+//        addAudioBook.addActionListener(this);
+//
+//        ButtonGroup addMediaGroup = new ButtonGroup();
+//        addMediaGroup.add(addMovie);
+//        addMediaGroup.add(addAlbum);
+//        addMediaGroup.add(addAlbum);
+//
+//        mediaTypePanel.add(addMovie);
+//        mediaTypePanel.add(addAlbum);
+//        mediaTypePanel.add(addAudioBook);
+//        accountPanel.add(mediaTypePanel, constraints);
+
+
+
+
+
+
+
+//        constraints.gridx = 1;
+//        checkTotalNumberSold = new JButton("Check Number Sold");
+//        checkTotalNumberSold.addActionListener(this);
+//        accountPanel.add(checkTotalNumberSold, constraints);
+
+
+
+//        constraints.gridx = 2;
+//        JPanel nameOfMediaToBeRemovePanel = new JPanel();
+//        nameOfMediaToBeRemovePanel.add(new JLabel("Name:"));
+//        nameOfMediaToBeRemove = new JTextField(10);
+//        nameOfMediaToBeRemovePanel.add(nameOfMediaToBeRemove);
+//        accountPanel.add(nameOfMediaToBeRemovePanel, constraints);
+
+
+
+        // add row7
+//        constraints.gridx = 0;
+//        constraints.gridy = 6;
+//        checkTotalSale = new JButton("Check Total Sale");
+//        checkTotalSale.addActionListener(this);
+//        accountPanel.add(checkTotalSale, constraints);
+
+
+
+    }
+
+//    
+//    
+    public void updatePurchaseHistoryTable() {
+
+
+
+
+        MyTableModel purchaseHistoryTableModel = new MyTableModel();
+        purchaseHistoryTable = new JTable(purchaseHistoryTableModel);
+        for (int i = 0; i < PurchaseHistoryCols.size(); i++) {
+            purchaseHistoryTableModel.addColumn(PurchaseHistoryCols.get(i));
+        }
+        purchaseHistoryTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        purchaseHistoryTable.setRowSelectionAllowed(true);
+        purchaseHistoryTable.setColumnSelectionAllowed(false);
+        purchaseHistoryTable.setAutoCreateRowSorter(true);
+
+
+
+        purchaseHistoryTable.getColumnModel().getColumn(0).setPreferredWidth(40);
+        purchaseHistoryTable.getColumnModel().getColumn(2).setPreferredWidth(150);
+        purchaseHistoryTable.getColumnModel().getColumn(3).setPreferredWidth(100);
+        purchaseHistoryTable.getColumnModel().getColumn(5).setPreferredWidth(100);
+        purchaseHistoryTable.getColumnModel().getColumn(6).setPreferredWidth(40);
+        purchaseHistoryTable.getColumnModel().getColumn(8).setPreferredWidth(40);
+        purchaseHistoryScrollPane = new JScrollPane(purchaseHistoryTable);
+        purchaseHistoryTable.setFillsViewportHeight(true);
+
+
+
+//        ArrayList<Integer> mediaIDList = mediaStore1.getCustomers().get(userIndex).getPurchaseHistory();
+//        purchase_media_id = "(";
+
+//        updateCurrentUserResultSet();
+
+//        mediaIDString += mediaIDList.get(0);
+//        for (int i = 1; i < mediaIDList.size(); i++) {
+//            mediaIDString = mediaIDString + ", " + mediaIDList.get(i).toString();
+//        }
+//        mediaIDString += ")";
+
+        int i;
+        try {
+            i = 0;
+
+            sql = String.format("select * from purchases where user_id='%s'", currentUserID);
+            dbResultSet = dbStatement.executeQuery(sql);
+            String purchaseList = "-1";
+//            if (dbResultSet.next()) {
+//                purchaseList += dbResultSet.getInt("media_id");
+//            }
+
+
+            while (dbResultSet.next()) {
+                purchaseList += String.format(",%d", dbResultSet.getInt("media_id"));
+            }
+
+
+
+            sql = String.format("select * from medias where media_id in (%s) order by type,name", purchaseList);
+            dbResultSet = dbStatement.executeQuery(sql);
+            while (dbResultSet.next()) {
+
+                String number = String.format("%d", i + 1);
+                String type = dbResultSet.getString("type");
+                String name = dbResultSet.getString("name");
+                String author = dbResultSet.getString("author");
+                String time = dbResultSet.getString("time");
+                String genre = dbResultSet.getString("genre");
+                String averageRanking = String.format("%d", dbResultSet.getInt("rank"));
+                String price = String.format("%.2f", dbResultSet.getDouble("price"));
+                String soldNum = String.format("%d", dbResultSet.getInt("sold_num"));
+                String rating = String.format("%.2f", dbResultSet.getDouble("rate"));
+                String year = String.format("%d", dbResultSet.getInt("year_released"));
+                String[] currentRow = {number, type, name, author, time, genre, averageRanking, price, soldNum, rating, year};
+                purchaseHistoryTableModel.addRow(currentRow);
+                i++;
+
+            }
+
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+
+//        repaint();
+
+    }
+
+    public void updatePurchaseHistoryTab() {
+        purchaseHistoryTab.removeAll();
+
+        purchaseHistoryTab.setLayout(new BorderLayout());
+        updatePurchaseHistoryTable();
+        purchaseHistoryTab.add(purchaseHistoryScrollPane, BorderLayout.CENTER);
+        purchaseHistoryTab.validate();
+        repaint();
+    }
+
+    public void updateUserTab() {
+        userTab.removeAll();
+        userTab.validate();
+
+        // set layout
+        userTab.setLayout(new BorderLayout());
+
+
+//        userData = new Vector<Vector>();
+//        Vector<String> userRow;
+
+
+
+
+        MyTableModel userTableModel = new MyTableModel();
+        userTable = new JTable(userTableModel);
+        for (int i = 0; i < UserCols.size(); i++) {
+            userTableModel.addColumn(UserCols.get(i));
+        }
+
+        userTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        userTable.setRowSelectionAllowed(true);
+        userTable.setColumnSelectionAllowed(false);
+        userTable.setAutoCreateRowSorter(true);
+//        userTable=new JTable(userData,UserCols);
+
+
+
+
+        userTable.getColumnModel().getColumn(5).setPreferredWidth(300);
+        JScrollPane userScrollPane = new JScrollPane(userTable);
+        userTable.setFillsViewportHeight(true);
+        userTab.add(userScrollPane, BorderLayout.CENTER);
+
+
+
+        int i;
+        try {
+            i = 0;
+            sql = "select * from users order by user_id";
+            dbResultSet = dbStatement.executeQuery(sql);
+            while (dbResultSet.next()) {
+
+                String number = String.format("%d", i + 1);
+                String ID = dbResultSet.getString("user_id");
+                String name = dbResultSet.getString("name");
+                String credit = String.format("%.2f", dbResultSet.getDouble("credit"));
+                String numberPurchase = String.format("%d", dbResultSet.getInt("purchase_num"));
+                String address = dbResultSet.getString("address");
+                String[] currentRow = {number, ID, name, credit, numberPurchase, address};
+                userTableModel.addRow(currentRow);
+                i++;
+            }
+
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+
+//
+//        for (int i = 0; i < mediaStore1.getCustomers().size(); i++) {
+//            String number = String.format("%d", i + 1);
+//            String ID = mediaStore1.getCustomers().get(i).ID;
+//            String name = mediaStore1.getCustomers().get(i).name;
+//            String credit = String.format("%.2f", mediaStore1.getCustomers().get(i).credit);
+//            String numberPurchase = String.format("%d", mediaStore1.getCustomers().get(i).getPurchaseHistory().size());
+//            String address = mediaStore1.getCustomers().get(i).address;
+////            String soldNum = String.format("%d", mediaStore1.getMedias().get(i).soldNum);
+////            String rate = String.format("%.2f", mediaStore1.getMedias().get(i).rate);
+////            String year = String.format("%d", ((Movie) (mediaStore1.getMedias().get(i))).getYear());
+//            String[] currentRow = {number, ID, name, credit, numberPurchase, address};
+//            userTableModel.addRow(currentRow);
+//
+//
+//        }
+
+
+//            userRow = new Vector<String>();
+//            userRow.add(String.format("%d", i + 1));
+//            userRow.add(mediaStore1.getCustomers().get(i).ID);
+//            userRow.add(mediaStore1.getCustomers().get(i).name);
+//            userRow.add(String.format("%.2f", mediaStore1.getCustomers().get(i).credit));
+//            userRow.add(String.format("%d", mediaStore1.getCustomers().get(i).getPurchaseHistory().size()));
+//            userRow.add(mediaStore1.getCustomers().get(i).address);
+//            userData.add(userRow);
+
+
+//            purchaseHistoryVector.add(mediaStore1.getCustomers().get(userIndex).getPurchaseHistory().get(i).userName);
+//        }
+//        constraints.gridx = 0;
+//        constraints.gridy = 0;
+//        constraints.gridwidth = 3;
+//        constraints.gridheight = 1;
+//        constraints.weightx = 1;
+//        constraints.weighty = 0.15;
+
+
+//        // add top row
+//        userTab.add(new JLabel(mediaStore1.getCustomers().get(userIndex).toString()), constraints);
+//
+//
+//        // add left column
+//        purchaseHistoryVector = new Vector<String>();
+//        for (int i = 0; i < mediaStore1.getCustomers().get(userIndex).getPurchaseHistory().size(); i++) {
+//            purchaseHistoryVector.add(mediaStore1.getCustomers().get(userIndex).getPurchaseHistory().get(i).userName);
+//        }
+//
+//        purchaseList = new JList(purchaseHistoryVector);
+//        purchaseList.addListSelectionListener(this);
+//        purchaseList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+//
+//        constraints.weighty = 1;
+//        constraints.gridy = 1;
+//        constraints.gridwidth = 1;
+//        userTab.add(purchaseList, constraints);
+//
+//
+//
+//        // add middle column
+//        constraints.weightx = 0;
+//        constraints.gridx = 1;
+//        userTab.add(new JLabel("Information>>>"), constraints);
+//
+//        // add right column
+//        purchaseTextArea = new JTextArea("Detail of Media", 10, 15);
+//        constraints.weightx = 1;
+//        constraints.gridx = 2;
+//
+//        userTab.add(purchaseTextArea, constraints);
+//        userTab.validate();
+        repaint();
+
+
+    }
+    
+    public boolean isNonNegativeDouble(String string) {
+        try {
+            if (Double.parseDouble(string) >= 0) {
+                return true;
+            } else {
+                JOptionPane.showMessageDialog(null, "can't accept Negative number", null, JOptionPane.WARNING_MESSAGE);
+                return false;
+            }
+
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null, "Number Format Error", null, JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+    }
+
+    public boolean isPositiveDouble(String string) {
+        try {
+            if (Double.parseDouble(string) > 0) {
+                return true;
+            } else {
+                JOptionPane.showMessageDialog(null, "can't accept non positive number", null, JOptionPane.WARNING_MESSAGE);
+                return false;
+            }
+
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null, "Number Format Error", null, JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+    }
+
+    /**
+     * sort the mediaOjbects ArrayList base on mediaTypeJComboBox and numberSold
+     * and then update the averageRank
+     */
+    public void updateAverageRanking() {
+        int currentRank = 1;
+        String previousType;
+        int previousSoldNumber;
+        int previousRank;
+        int currentMediaID;
+//        Statement tempStatement1;
+
+        // set all rank to 1;
+
+
+        Statement tempStatement = null;
+
+
+        try {
+//            tempStatement1 = dbConnection.createStatement();
+
+
+
+            sql = "update medias set rank=1";
+            dbStatement.execute(sql);
+
+            sql = "select * from medias order by type,sold_num desc";
+            dbResultSet = dbStatement.executeQuery(sql);
+            dbResultSet.next();
+
+            previousType = dbResultSet.getString("type");
+            previousSoldNumber = dbResultSet.getInt("sold_num");
+            previousRank = dbResultSet.getInt("rank");
+            System.out.println(String.format("%s,number_sold: %d, Rank: %d", previousType, previousSoldNumber, previousRank));
+
+            while (dbResultSet.next()) {
+                if (dbResultSet.getString("type").equals(previousType)) { //if same type
+//                    System.out.println("Sametype");
+                    currentMediaID = dbResultSet.getInt("media_id");
+
+                    tempStatement = dbConnection.createStatement();
+//                    ResultSet tempResultSet2=tempStatement2.
+                    if (dbResultSet.getInt("sold_num") < previousSoldNumber) { //rank increase
+//                        System.out.println("previousRank"+" increase");
+                        currentRank++;
+                        sql = String.format("update medias set rank=%d where media_id=%d", currentRank, currentMediaID);
+                        tempStatement.execute(sql);
+
+                    } else {  //rank is the same as previous
+//                        System.out.println(previousRank+" remaind");
+                        sql = String.format("update medias set rank=%d where media_id=%d", currentRank, currentMediaID);
+                        tempStatement.execute(sql);
+
+                    }
+                } else {//reset the current rank to 1
+                    currentRank = 1;
+                }
+                previousType = dbResultSet.getString("type");
+                previousSoldNumber = dbResultSet.getInt("sold_num");
+                previousRank = dbResultSet.getInt("rank");
+                System.out.println(String.format("%s,number_sold: %d, Rank: %d", previousType, previousSoldNumber, previousRank));
+
+            }
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        } finally {
+            try {
+                if (tempStatement != null) {
+                    tempStatement.close();
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        }
+
+
+//        Collections.sort(mediaObjects, new MediaComparator()); //sort the mediaOjbects ArrayList base on mediaTypeJComboBox and numberSold
+//        for (int i = 1; i < mediaObjects.size(); i++) { //update the averageRan
+//            if (mediaObjects.get(i).getType() == mediaObjects.get(i - 1).getType()) { // if same type
+//                if (mediaObjects.get(i).numberSold < mediaObjects.get(i - 1).numberSold) {
+//                    mediaObjects.get(i).rank = mediaObjects.get(i - 1).rank + 1; //ranking increase 
+//                } else {
+//                    mediaObjects.get(i).rank = mediaObjects.get(i - 1).rank; //ranking remain
+//                }
+//            }
+//        }
+    }
+
+    public void updateLibrary() {
+
+        //resort the library
+        //***********************************************************************************
+        updateAverageRanking();
+        updateSearchTablePanel();
+
+        movieTab.removeAll();
+        musicTab.removeAll();
+        audioBookTab.removeAll();
+
+        movieTab.validate();
+        musicTab.validate();
+        audioBookTab.validate();
+
+//        movieData=new String[100][10];
+//        musicData=new String[100][9];
+//        audioBookData=new String[100][9];
+
+
+//        int movieIndex=0;
+//        int musicIndex=0;
+//        int audioBookIndex=0;
+//        for (int i = 0; i < mediaStore1.getMedias().size(); i++) {
+//            if(mediaStore1.getMedias().get(i).avaliable==true) {
+//                if (mediaStore1.getMedias().get(i) instanceof Movie) {
+//                    movieData[movieIndex][0]=String.format("%d", movieIndex+1);
+//                    movieData[movieIndex][1]=mediaStore1.getMedias().get(i).userName;
+//                    movieData[movieIndex][2]=mediaStore1.getMedias().get(i).author;
+//                    movieData[movieIndex][3]=mediaStore1.getMedias().get(i).time;
+//                    movieData[movieIndex][4]=mediaStore1.getMedias().get(i).genre;
+//                    movieData[movieIndex][5]=String.format("%d", mediaStore1.getMedias().get(i).rank);
+//                    movieData[movieIndex][6]=String.format("%.2f", mediaStore1.getMedias().get(i).price);
+//                    movieData[movieIndex][7]=String.format("%d", mediaStore1.getMedias().get(i).soldNum);
+//                    movieData[movieIndex][8]=String.format("%.2f", mediaStore1.getMedias().get(i).rate);
+//                    movieData[movieIndex][9]=String.format("%d", ((Movie)(mediaStore1.getMedias().get(i))).getYear());
+//                    movieIndex++;
+//        //                moviesVector.add(mediaStore1.getMedias().get(i).userName);
+//                } else if (mediaStore1.getMedias().get(i) instanceof Music) {
+//                    musicData[musicIndex][0]=String.format("%d", musicIndex+1);
+//                    musicData[musicIndex][1]=mediaStore1.getMedias().get(i).userName;
+//                    musicData[musicIndex][2]=mediaStore1.getMedias().get(i).author;
+//                    musicData[musicIndex][3]=mediaStore1.getMedias().get(i).time;
+//                    musicData[musicIndex][4]=mediaStore1.getMedias().get(i).genre;
+//                    musicData[musicIndex][5]=String.format("%d", mediaStore1.getMedias().get(i).rank);
+//                    musicData[musicIndex][6]=String.format("%.2f", mediaStore1.getMedias().get(i).price);
+//                    musicData[musicIndex][7]=String.format("%d", mediaStore1.getMedias().get(i).soldNum);
+//                    musicData[musicIndex][8]=String.format("%.2f", mediaStore1.getMedias().get(i).rate);
+//                    musicIndex++;
+//        //                albumsVector.add(mediaStore1.getMedias().get(i).userName);
+//                } else {
+//
+//                    audioBookData[audioBookIndex][0]=String.format("%d", audioBookIndex+1);
+//                    audioBookData[audioBookIndex][1]=mediaStore1.getMedias().get(i).userName;
+//                    audioBookData[audioBookIndex][2]=mediaStore1.getMedias().get(i).author;
+//                    audioBookData[audioBookIndex][3]=mediaStore1.getMedias().get(i).time;
+//                    audioBookData[audioBookIndex][4]=mediaStore1.getMedias().get(i).genre;
+//                    audioBookData[audioBookIndex][5]=String.format("%d", mediaStore1.getMedias().get(i).rank);
+//                    audioBookData[audioBookIndex][6]=String.format("%.2f", mediaStore1.getMedias().get(i).price);
+//                    audioBookData[audioBookIndex][7]=String.format("%d", mediaStore1.getMedias().get(i).soldNum);
+//                    audioBookData[audioBookIndex][8]=String.format("%.2f", mediaStore1.getMedias().get(i).rate);
+//                    audioBookIndex++;
+//        //                audioBooksVector.add(mediaStore1.getMedias().get(i).userName);
+//                }
+//            }
+//
+//        }
+//        
+
+//        movieData = new Vector<Vector>();
+//        musicData = new Vector<Vector>();
+//        audioBookData = new Vector<Vector>();
+
+//        Vector<String> movieRow;
+//        Vector<String> musicRow;
+//        Vector<String> audioBookRow;
+
+
+
+
+
+
+
+        movieTab.setLayout(new BorderLayout());
+
+        MyTableModel movieTableModel = new MyTableModel();
+        movieTable = new JTable(movieTableModel);
+
+        //add cols
+        for (int i = 0; i < MovieCols.size(); i++) {
+            movieTableModel.addColumn(MovieCols.get(i));
+        }
+
+
+        movieTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        movieTable.setRowSelectionAllowed(true);
+        movieTable.setColumnSelectionAllowed(false);
+        movieTable.setAutoCreateRowSorter(true);
+
+        movieTable.getColumnModel().getColumn(0).setPreferredWidth(40);
+        movieTable.getColumnModel().getColumn(1).setPreferredWidth(150);
+        movieTable.getColumnModel().getColumn(2).setPreferredWidth(100);
+        movieTable.getColumnModel().getColumn(4).setPreferredWidth(100);
+        movieTable.getColumnModel().getColumn(5).setPreferredWidth(40);
+        movieTable.getColumnModel().getColumn(7).setPreferredWidth(40);
+        JScrollPane movieScrollPane = new JScrollPane(movieTable);
+        movieTable.setFillsViewportHeight(true);
+        movieTab.add(movieScrollPane, BorderLayout.CENTER);
+
+
+        musicTab.setLayout(new BorderLayout());
+
+
+        MyTableModel musicTableModel = new MyTableModel();
+        musicTable = new JTable(musicTableModel);
+
+        for (int i = 0; i < MusicCols.size(); i++) {
+            musicTableModel.addColumn(MusicCols.get(i));
+        }
+
+
+
+        musicTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        musicTable.setRowSelectionAllowed(true);
+        musicTable.setColumnSelectionAllowed(false);
+        musicTable.setAutoCreateRowSorter(true);
+
+        musicTable.getColumnModel().getColumn(0).setPreferredWidth(40);
+        musicTable.getColumnModel().getColumn(1).setPreferredWidth(150);
+        musicTable.getColumnModel().getColumn(2).setPreferredWidth(100);
+        musicTable.getColumnModel().getColumn(4).setPreferredWidth(100);
+        musicTable.getColumnModel().getColumn(5).setPreferredWidth(40);
+        musicTable.getColumnModel().getColumn(7).setPreferredWidth(40);
+        JScrollPane albumScrollPane = new JScrollPane(musicTable);
+        musicTable.setFillsViewportHeight(true);
+        musicTab.add(albumScrollPane, BorderLayout.CENTER);
+
+
+        audioBookTab.setLayout(new BorderLayout());
+
+
+        MyTableModel audioBookTableModel = new MyTableModel();
+        audioBookTable = new JTable(audioBookTableModel);
+        for (int i = 0; i < AudioBookCols.size(); i++) {
+            audioBookTableModel.addColumn(AudioBookCols.get(i));
+        }
+
+        audioBookTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        audioBookTable.setRowSelectionAllowed(true);
+        audioBookTable.setColumnSelectionAllowed(false);
+        audioBookTable.setAutoCreateRowSorter(true);
+
+        audioBookTable.getColumnModel().getColumn(0).setPreferredWidth(40);
+        audioBookTable.getColumnModel().getColumn(1).setPreferredWidth(150);
+        audioBookTable.getColumnModel().getColumn(2).setPreferredWidth(100);
+        audioBookTable.getColumnModel().getColumn(4).setPreferredWidth(100);
+        audioBookTable.getColumnModel().getColumn(5).setPreferredWidth(40);
+        audioBookTable.getColumnModel().getColumn(7).setPreferredWidth(40);
+        JScrollPane audioBookScrollPane = new JScrollPane(audioBookTable);
+        audioBookTable.setFillsViewportHeight(true);
+        audioBookTab.add(audioBookScrollPane, BorderLayout.CENTER);
+
+
+        int i;
+        try {
+            sql = "select * from medias where type='movie' and available=1 order by name";
+
+//            sql = "select * from medias order by type,sold_num desc,name";
+            dbResultSet = dbStatement.executeQuery(sql);
+            i = 0;
+            while (dbResultSet.next()) {
+                String number = String.format("%d", i + 1);
+                String name = dbResultSet.getString("name");
+                String author = dbResultSet.getString("author");
+                String time = dbResultSet.getString("time");
+                String genre = dbResultSet.getString("genre");
+                String averageRanking = String.format("%d", dbResultSet.getInt("rank"));
+                String price = String.format("%.2f", dbResultSet.getDouble("price"));
+                String numberSold = String.format("%d", dbResultSet.getInt("sold_num"));
+                String rating = String.format("%.2f", dbResultSet.getDouble("rate"));
+                String year = String.format("%d", dbResultSet.getInt("year_released"));
+                String[] currentRow = {number, name, author, time, genre, averageRanking, price, numberSold, rating, year};
+                movieTableModel.addRow(currentRow);
+                i++;
+            }
+
+
+            sql = "select * from medias where type='music' and available=1 order by name";
+            dbResultSet = dbStatement.executeQuery(sql);
+            i = 0;
+            while (dbResultSet.next()) {
+                String number = String.format("%d", i + 1);
+                String name = dbResultSet.getString("name");
+                String author = dbResultSet.getString("author");
+                String time = dbResultSet.getString("time");
+                String genre = dbResultSet.getString("genre");
+                String averageRanking = String.format("%d", dbResultSet.getInt("rank"));
+                String price = String.format("%.2f", dbResultSet.getDouble("price"));
+                String numberSold = String.format("%d", dbResultSet.getInt("sold_num"));
+                String rating = String.format("%.2f", dbResultSet.getDouble("rate"));
+//                String year = String.format("%d", dbResultSet.getInt("year_released"));
+                String[] currentRow = {number, name, author, time, genre, averageRanking, price, numberSold, rating};
+                musicTableModel.addRow(currentRow);
+                i++;
+            }
+
+
+
+
+            sql = "select * from medias where type='audioBook' and available=1  order by name";
+            dbResultSet = dbStatement.executeQuery(sql);
+            i = 0;
+            while (dbResultSet.next()) {
+                String number = String.format("%d", i + 1);
+                String name = dbResultSet.getString("name");
+                String author = dbResultSet.getString("author");
+                String time = dbResultSet.getString("time");
+                String genre = dbResultSet.getString("genre");
+                String averageRanking = String.format("%d", dbResultSet.getInt("rank"));
+                String price = String.format("%.2f", dbResultSet.getDouble("price"));
+                String numberSold = String.format("%d", dbResultSet.getInt("sold_num"));
+                String rating = String.format("%.2f", dbResultSet.getDouble("rate"));
+//                String year = String.format("%d", dbResultSet.getInt("year_released"));
+                String[] currentRow = {number, name, author, time, genre, averageRanking, price, numberSold, rating};
+                audioBookTableModel.addRow(currentRow);
+                i++;
+            }
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+//
+//        int movieIndex = 0;
+//        int musicIndex = 0;
+//        int audioBookIndex = 0;
+//        for (int i = 0; i < mediaStore1.getMedias().size(); i++) {
+//            if (mediaStore1.getMedias().get(i).avaliable == true) {
+//                if (mediaStore1.getMedias().get(i) instanceof Movie) {
+////                    currentRow = new Vector<String>();
+//                    String number = String.format("%d", movieIndex + 1);
+//                    String name = mediaStore1.getMedias().get(i).name;
+//                    String author = mediaStore1.getMedias().get(i).author;
+//                    String time = mediaStore1.getMedias().get(i).time;
+//                    String genre = mediaStore1.getMedias().get(i).genre;
+//                    String averageRanking = String.format("%d", mediaStore1.getMedias().get(i).rank);
+//                    String price = String.format("%.2f", mediaStore1.getMedias().get(i).price);
+//                    String soldNum = String.format("%d", mediaStore1.getMedias().get(i).soldNum);
+//                    String rating = String.format("%.2f", mediaStore1.getMedias().get(i).rate);
+//                    String year = String.format("%d", mediaStore1.getMedias().get(i).getYear());
+//                    String[] currentRow = {number, name, author, time, genre, averageRanking, price, soldNum, rating, year};
+//                    movieTableModel.addRow(currentRow);
+//                    movieIndex++;
+//
+////                    movieRow.add(String.format("%d", movieData.size() + 1));
+////                    movieRow.add(mediaStore1.getMedias().get(i).name);
+////                    movieRow.add(mediaStore1.getMedias().get(i).author);
+////                    movieRow.add(mediaStore1.getMedias().get(i).time);
+////                    movieRow.add(mediaStore1.getMedias().get(i).genre);
+////                    movieRow.add(String.format("%d", mediaStore1.getMedias().get(i).rank));
+////                    movieRow.add(String.format("%.2f", mediaStore1.getMedias().get(i).price));
+////                    movieRow.add(String.format("%d", mediaStore1.getMedias().get(i).soldNum));
+////                    movieRow.add(String.format("%.2f", mediaStore1.getMedias().get(i).rate));
+////                    movieRow.add(String.format("%d", ((Movie) (mediaStore1.getMedias().get(i))).getYear()));
+////                    movieData.add(movieRow);
+////                    movieIndex++;
+//                    //                moviesVector.add(mediaStore1.getMedias().get(i).userName);
+//                } else if (mediaStore1.getMedias().get(i) instanceof Music) {
+//
+//
+//                    String number = String.format("%d", musicIndex + 1);
+//                    String name = mediaStore1.getMedias().get(i).name;
+//                    String author = mediaStore1.getMedias().get(i).author;
+//                    String time = mediaStore1.getMedias().get(i).time;
+//                    String genre = mediaStore1.getMedias().get(i).genre;
+//                    String averageRanking = String.format("%d", mediaStore1.getMedias().get(i).rank);
+//                    String price = String.format("%.2f", mediaStore1.getMedias().get(i).price);
+//                    String soldNum = String.format("%d", mediaStore1.getMedias().get(i).soldNum);
+//                    String rating = String.format("%.2f", mediaStore1.getMedias().get(i).rate);
+////                    String year=String.format("%d", ((Movie) (mediaStore1.getMedias().get(i))).getYear());
+//                    String[] currentRow = {number, name, author, time, genre, averageRanking, price, soldNum, rating};
+//                    musicTableModel.addRow(currentRow);
+//                    musicIndex++;
+//
+//
+////                    musicRow = new Vector<String>();
+////                    musicRow.add(String.format("%d", musicData.size() + 1));
+////                    musicRow.add(mediaStore1.getMedias().get(i).name);
+////                    musicRow.add(mediaStore1.getMedias().get(i).author);
+////                    musicRow.add(mediaStore1.getMedias().get(i).time);
+////                    musicRow.add(mediaStore1.getMedias().get(i).genre);
+////                    musicRow.add(String.format("%d", mediaStore1.getMedias().get(i).rank));
+////                    musicRow.add(String.format("%.2f", mediaStore1.getMedias().get(i).price));
+////                    musicRow.add(String.format("%d", mediaStore1.getMedias().get(i).soldNum));
+////                    musicRow.add(String.format("%.2f", mediaStore1.getMedias().get(i).rate));
+////                    musicData.add(musicRow);
+////                    musicIndex++;
+//                    //                albumsVector.add(mediaStore1.getMedias().get(i).userName);
+//                } else {
+//
+//                    String number = String.format("%d", audioBookIndex + 1);
+//                    String name = mediaStore1.getMedias().get(i).name;
+//                    String author = mediaStore1.getMedias().get(i).author;
+//                    String time = mediaStore1.getMedias().get(i).time;
+//                    String genre = mediaStore1.getMedias().get(i).genre;
+//                    String averageRanking = String.format("%d", mediaStore1.getMedias().get(i).rank);
+//                    String price = String.format("%.2f", mediaStore1.getMedias().get(i).price);
+//                    String soldNum = String.format("%d", mediaStore1.getMedias().get(i).soldNum);
+//                    String rating = String.format("%.2f", mediaStore1.getMedias().get(i).rate);
+////                    String year=String.format("%d", ((Movie) (mediaStore1.getMedias().get(i))).getYear());
+//                    String[] currentRow = {number, name, author, time, genre, averageRanking, price, soldNum, rating};
+//                    audioBookTableModel.addRow(currentRow);
+//                    audioBookIndex++;
+//
+//
+////                    
+////                    audioBookRow = new Vector<String>();
+////                    audioBookRow.add(String.format("%d", audioBookData.size() + 1));
+////                    audioBookRow.add(mediaStore1.getMedias().get(i).name);
+////                    audioBookRow.add(mediaStore1.getMedias().get(i).author);
+////                    audioBookRow.add(mediaStore1.getMedias().get(i).time);
+////                    audioBookRow.add(mediaStore1.getMedias().get(i).genre);
+////                    audioBookRow.add(String.format("%d", mediaStore1.getMedias().get(i).rank));
+////                    audioBookRow.add(String.format("%.2f", mediaStore1.getMedias().get(i).price));
+////                    audioBookRow.add(String.format("%d", mediaStore1.getMedias().get(i).soldNum));
+////                    audioBookRow.add(String.format("%.2f", mediaStore1.getMedias().get(i).rate));
+////                    audioBookData.add(audioBookRow);
+////                    audioBookIndex++;
+//                    //                audioBooksVector.add(mediaStore1.getMedias().get(i).userName);
+//                }
+//            }
+//
+//        }
+
+//        int movieIndex=0;
+//        int musicIndex=0;
+//        int audioBookIndex=0;
+
+
+
+
+
+        // get the list for movie music and audiobook
+//        moviesVector = new Vector<String>();
+//        albumsVector = new Vector<String>();
+//        audioBooksVector = new Vector<String>();
+
+//        for (int i = 0; i < mediaStore1.getMedias().size(); i++) {
+//            if (mediaStore1.getMedias().get(i) instanceof Movie) {
+//                moviesVector.add(mediaStore1.getMedias().get(i).userName);
+//            } else if (mediaStore1.getMedias().get(i) instanceof Music) {
+//                albumsVector.add(mediaStore1.getMedias().get(i).userName);
+//            } else {
+//                audioBooksVector.add(mediaStore1.getMedias().get(i).userName);
+//            }
+//
+//        }
+
+//
+//
+//        // set the movie tab
+//
+//        movieTab.setLayout(new GridBagLayout());
+//        moviesList = new JList(moviesVector);
+//        moviesList.addListSelectionListener(this);
+//        moviesList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+//
+//        constraints.gridx = 0;
+//        constraints.gridy = 0;
+//        constraints.gridwidth = 1;
+//        constraints.gridheight = 3;
+//        constraints.weightx = 1;
+//        constraints.weighty = 1;
+//        movieTab.add(moviesList, constraints);
+//
+//        // add for customer account only
+//        if (userAccount.isSelected()) {
+//            purchaseMovie = new JButton("Purchase");
+//            purchaseMovie.addActionListener(this);
+//            constraints.gridx = 1;
+//            constraints.gridy = 0;
+//            constraints.gridwidth = 1;
+//            constraints.gridheight = 1;
+//            constraints.weightx = 0;
+//            constraints.weighty = 0;
+//            movieTab.add(purchaseMovie, constraints);
+//        }
+//
+//
+//        constraints.gridx = 1;
+//        constraints.gridy = 1;
+//        constraints.gridwidth = 1;
+//        constraints.gridheight = 2;
+//        constraints.weightx = 0;
+//        constraints.weighty = 1;
+//
+//
+//        movieTab.add(new JLabel("Information>>>"), constraints);
+//
+//
+//        constraints.gridx = 2;
+//        constraints.gridy = 0;
+//        constraints.gridwidth = 1;
+//        constraints.gridheight = 3;
+//        constraints.weightx = 1;
+//        constraints.weighty = 1;
+//
+//
+//        movieTextArea = new JTextArea("Detail of Media", 10, 15);
+//
+//
+//        constraints.gridx = 2;
+//        constraints.gridy = 0;
+//        constraints.gridwidth = 1;
+//        constraints.gridheight = 3;
+//        constraints.weightx = 1;
+//        constraints.weighty = 1;
+//
+//
+//        movieTab.add(movieTextArea, constraints);
+
+
+
+
+        // set the album tab
+//        musicTab.setLayout(new GridBagLayout());
+//
+//
+//        albumsList = new JList(albumsVector);
+//        albumsList.addListSelectionListener(this);
+//
+//        albumsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+//
+//        constraints.gridx = 0;
+//        constraints.gridy = 0;
+//        constraints.gridwidth = 1;
+//        constraints.gridheight = 3;
+//        constraints.weightx = 1;
+//        constraints.weighty = 1;
+//        musicTab.add(albumsList, constraints);
+//
+//
+//        if (userAccount.isSelected()) {
+//            purchaseAlbum = new JButton("Purhcase");
+//            purchaseAlbum.addActionListener(this);
+//            constraints.gridx = 1;
+//            constraints.gridy = 0;
+//            constraints.gridwidth = 1;
+//            constraints.gridheight = 1;
+//            constraints.weightx = 0;
+//            constraints.weighty = 0;
+//            musicTab.add(purchaseAlbum, constraints);
+//        }
+//
+//
+//        constraints.gridx = 1;
+//        constraints.gridy = 1;
+//        constraints.gridwidth = 1;
+//        constraints.gridheight = 2;
+//        constraints.weightx = 0;
+//        constraints.weighty = 1;
+//
+//        musicTab.add(new JLabel("Information>>>"), constraints);
+//
+//
+//
+//        albumTextArea = new JTextArea("Detail of Media", 10, 15);
+//
+//        constraints.gridx = 2;
+//        constraints.gridy = 0;
+//        constraints.gridwidth = 1;
+//        constraints.gridheight = 3;
+//        constraints.weightx = 1;
+//        constraints.weighty = 1;
+//        musicTab.add(albumTextArea, constraints);
+//
+//
+//        // set the audiobook tab
+//        audioBookTab.setLayout(new GridBagLayout());
+//
+//        audioBooksList = new JList(audioBooksVector);
+//        audioBooksList.addListSelectionListener(this);
+//
+//        audioBooksList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+//
+//        constraints.gridx = 0;
+//        constraints.gridy = 0;
+//        constraints.gridwidth = 1;
+//        constraints.gridheight = 3;
+//        constraints.weightx = 1;
+//        constraints.weighty = 1;
+//        audioBookTab.add(audioBooksList, constraints);
+//
+//
+//        if (userAccount.isSelected()) {
+//            constraints.gridx = 1;
+//            constraints.gridy = 0;
+//            constraints.gridwidth = 1;
+//            constraints.gridheight = 1;
+//            constraints.weightx = 0;
+//            constraints.weighty = 0;
+//            purchaseAudioBook = new JButton("Purchase");
+//            purchaseAudioBook.addActionListener(this);
+//            audioBookTab.add(purchaseAudioBook, constraints);
+//        }
+//
+//        constraints.gridx = 1;
+//        constraints.gridy = 1;
+//        constraints.gridwidth = 1;
+//        constraints.gridheight = 2;
+//        constraints.weightx = 0;
+//        constraints.weighty = 1;
+//
+//        audioBookTab.add(new JLabel("Information>>>"), constraints);
+//
+//        audioBookTextArea = new JTextArea("Detail of Media", 10, 15);
+//        constraints.gridx = 2;
+//        constraints.gridy = 0;
+//        constraints.gridwidth = 1;
+//        constraints.gridheight = 3;
+//        constraints.weightx = 1;
+//        constraints.weighty = 1;
+//
+//        audioBookTab.add(audioBookTextArea, constraints);
+
+//        movieTab.validate();
+//        musicTab.validate();
+//        audioBookTab.validate();
+        repaint();
+
+    }
+
+    @SuppressWarnings("deprecation")
+    public void actionPerformed(ActionEvent e) {  // handle button
+
+
+        if (e.getSource() == logout) {
+            logout();
+        }
+
+
+
+        if (e.getSource() == login) {
+            if (accountTypeJComboBox.getSelectedIndex() == 0) {
+
+                try {
+                    sql = String.format("select * from users where user_id='%s'", userID.getText());
+                    currentUserResultSet = currentUserStatement.executeQuery(sql);
+                    if (currentUserResultSet.next()) {
+                        currentUserID = currentUserResultSet.getString("user_id");
+//                        sql = String.format("select * from users where user_id='%s'", userID.getText());
+//                        currentUserResultSet = currentUserStatement.executeQuery(sql);
+                        loginUserAccount();
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Can't find UserID \"" + userID.getText() + "\" in the database", null, JOptionPane.WARNING_MESSAGE);
+
+                    }
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+//                userIndex = mediaStore1.foundCustomer(userID.getText());
+//                if (userIndex != -1) { // find it and login
+//                    loginUserAccount();
+////                    updateLibrary();
+//
+//                } else {
+//                    JOptionPane.showMessageDialog(null, "Can't find UserID \"" + userID.getText() + "\" in the database", null, JOptionPane.WARNING_MESSAGE);
+//                }
+
+            } else { // manager account
+                if (mediaStore1.getManager().ID.equals(userID.getText()) && Arrays.equals(mediaStore1.getManager().password.toCharArray(), passWord.getPassword())) {
+                    loginManagerAccount();
+//                    updateLibrary();
+
+                } else {
+                    JOptionPane.showMessageDialog(null, "Invalid Manager userID and password combination", null, JOptionPane.WARNING_MESSAGE);
+                }
+
+            }
+        }
+
+
+
+        if (e.getSource() == searchButton) {
+            updateSearchTablePanel();
+//            if (searchName.getText().isEmpty()) {
+//                JOptionPane.showMessageDialog(null, "Empty inputs is not allow", null, JOptionPane.WARNING_MESSAGE);
+//
+//                //                    JOptionPane.showMessageDialog(null, "Account with User ID \"" + userID.getText() + "\" has been added", null, JOptionPane.WARNING_MESSAGE);
+//            } else {
+//
+//                updateSearchTablePanel();
+//
+//
+//
+//            }
+
+        }
+
+        if (e.getSource() == filterTypeJComboBox) {
+
+            updateSearchTablePanel();
+        }
+
+//        if (e.getSource() == retrieveCustomerInfo) {
+//            userIndex = mediaStore1.getManager().foundCustomer(mediaStore1.getCustomers(), customerName.getText());
+//            if (userIndex != -1) { // find it and display it
+//                updateUserTab();
+//                tabs.setSelectedIndex(4);
+//
+//            } else {
+//                JOptionPane.showMessageDialog(null, customerName.getText() + " is not a valid User ID", null, JOptionPane.WARNING_MESSAGE);
+//            }
+//        }
+
+
+        if (e.getSource() == addCustomerButton) {
+            addCustomerPanel = new JPanel();
+            addCustomerPanel.setLayout(new GridLayout(4, 1));
+            addCustomerPanel.setPreferredSize(new Dimension(80, 200));
+
+            JPanel userIDPanel = new JPanel();
+            userIDPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+            userIDPanel.add(new JLabel("UserID:"));
+            userID = new JTextField(10);
+            userIDPanel.add(userID);
+            addCustomerPanel.add(userIDPanel);
+
+
+            JPanel namePanel = new JPanel();
+            namePanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+            namePanel.add(new JLabel("Name:"));
+            userName = new JTextField(10);
+            namePanel.add(userName);
+            addCustomerPanel.add(namePanel);
+
+
+            JPanel addressPanel = new JPanel();
+            addressPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+            addressPanel.add(new JLabel("Address:"));
+            userAddress = new JTextField(10);
+            addressPanel.add(userAddress);
+            addCustomerPanel.add(addressPanel);
+
+            JPanel creditPanel = new JPanel();
+            creditPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+            creditPanel.add(new JLabel("Credit:"));
+            userCredit = new JTextField(10);
+            creditPanel.add(userCredit);
+            addCustomerPanel.add(creditPanel);
+
+
+
+            int result = JOptionPane.showConfirmDialog(null, addCustomerPanel, "Add a Customer", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+            if (result == JOptionPane.OK_OPTION) {
+//                int index = mediaStore1.getManager().foundCustomer(mediaStore1.getCustomers(), userID.getText());
+//                if (index == -1) {
+                if (userID.getText().isEmpty() || userName.getText().isEmpty() || userAddress.getText().isEmpty() || userCredit.getText().isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "Empty inputs is not allow", null, JOptionPane.WARNING_MESSAGE);
+
+                    //                    JOptionPane.showMessageDialog(null, "Account with User ID \"" + userID.getText() + "\" has been added", null, JOptionPane.WARNING_MESSAGE);
+                } else {
+                    if (isNonNegativeDouble(userCredit.getText())) {
+//                        sql = String.format("insert into users (user_id,name,credit,purchase_num,address) values ('%s','%s',%.2f,0,'%s')", userID.getText(), userName.getText(), Double.parseDouble(userCredit.getText()), userAddress.getText());
+//                        try {
+//                            //                      
+//                            dbStatement.execute(sql);
+//                        } catch (SQLException ex) {
+//                            ex.printStackTrace();
+//                        }
+                        addCustomer(new Customer(userID.getText(), userName.getText(), userAddress.getText(), Double.parseDouble(userCredit.getText())));
+                        updateUserTab();
+
+                    }
+
+                }
+            }
+//                else {
+//                    JOptionPane.showMessageDialog(null, "Account with User ID \"" + userID.getText() + "\" is already exist", null, JOptionPane.WARNING_MESSAGE);         
+//
+//                }
+
+
+
+//             }
+
+
+
+
+        }
+
+
+
+        if (e.getSource() == addMediaButton) {
+
+            addMediaPanel = new JPanel();
+            addMediaPanel.setLayout(new GridLayout(7, 1));
+            addMediaPanel.setPreferredSize(new Dimension(80, 300));
+
+
+            JPanel mediaTypePanel = new JPanel();
+            mediaTypePanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+            mediaTypePanel.add(new JLabel("Type:"));
+            mediaTypeJComboBox = new JComboBox(new String[]{"Movie", "Music", "AudioBook"});
+            mediaTypeJComboBox.addActionListener(this);
+            mediaTypeJComboBox.setPreferredSize(new Dimension(passWord.getPreferredSize().width, passWord.getPreferredSize().height));
+            mediaTypePanel.add(mediaTypeJComboBox);
+            addMediaPanel.add(mediaTypePanel);
+
+
+
+            JPanel mediaNamePanel = new JPanel();
+            mediaNamePanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+            mediaNamePanel.add(new JLabel("Name:"));
+            mediaName = new JTextField(10);
+            mediaNamePanel.add(mediaName);
+            addMediaPanel.add(mediaNamePanel);
+
+
+            JPanel mediaAuthorPanel = new JPanel();
+            mediaAuthorPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+            mediaAuthorPanel.add(new JLabel("Author:"));
+            mediaAuthor = new JTextField(10);
+            mediaAuthorPanel.add(mediaAuthor);
+            addMediaPanel.add(mediaAuthorPanel);
+
+
+
+            JPanel mediaTimePanel = new JPanel();
+            mediaTimePanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+            mediaTimePanel.add(new JLabel("Time:"));
+            mediaTime = new JTextField(10);
+            mediaTimePanel.add(mediaTime);
+            addMediaPanel.add(mediaTimePanel);
+
+
+
+            JPanel mediaGenrePanel = new JPanel();
+            mediaGenrePanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+            mediaGenrePanel.add(new JLabel("Genre:"));
+            mediaGenre = new JTextField(10);
+            mediaGenrePanel.add(mediaGenre);
+            addMediaPanel.add(mediaGenrePanel);
+
+
+
+            JPanel mediaPricePanel = new JPanel();
+            mediaPricePanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+            mediaPricePanel.add(new JLabel("Price:"));
+            mediaPrice = new JTextField(10);
+            mediaPricePanel.add(mediaPrice);
+            addMediaPanel.add(mediaPricePanel);
+
+
+
+            mediaYearOfReleasePanel = new JPanel();
+            mediaYearOfReleasePanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+            mediaYearOfReleasePanel.add(new JLabel("Year:"));
+            mediaYearOfRelease = new JTextField(10);
+//            mediaYearOfRelease.setText("Movie Only");
+            mediaYearOfReleasePanel.add(mediaYearOfRelease);
+            addMediaPanel.add(mediaYearOfReleasePanel);
+
+
+            int result = JOptionPane.showConfirmDialog(null, addMediaPanel, "Add a media", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+
+            if (result == JOptionPane.OK_OPTION) {
+//                int index = mediaStore1.getManager().foundMedia(mediaStore1.getMedias(), mediaName.getText(),mediaTypeJComboBox.getSelectedItem().toString());
+//                if (index == -1) { // did not find it and add it
+                if (mediaName.getText().isEmpty() || mediaAuthor.getText().isEmpty() || mediaTime.getText().isEmpty() || mediaGenre.getText().isEmpty() || mediaPrice.getText().isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "Empty inputs is not allow", null, JOptionPane.WARNING_MESSAGE);
+
+                } else {
+
+
+                    if (mediaTypeJComboBox.getSelectedIndex() == 0) {
+                        if (mediaYearOfRelease.getText().isEmpty()) {
+                            JOptionPane.showMessageDialog(null, "Empty inputs is not allow", null, JOptionPane.WARNING_MESSAGE);
+
+                        } else {
+                            if (isPositiveDouble(mediaYearOfRelease.getText()) && isPositiveDouble(mediaPrice.getText())) {
+//                                sql=String.format("insert into media ()", rateChoices)
+
+                                addMedia(new Movie(mediaName.getText(), mediaAuthor.getText(), mediaTime.getText(), mediaGenre.getText(),
+                                        Integer.parseInt(mediaYearOfRelease.getText()), Double.parseDouble(mediaPrice.getText())));
+                                updateLibrary();
+                            }
+
+
+                        }
+
+                    } else if (mediaTypeJComboBox.getSelectedIndex() == 1) {
+                        if (isPositiveDouble(mediaPrice.getText())) {
+                            addMedia(new Music(mediaName.getText(), mediaAuthor.getText(), mediaTime.getText(), mediaGenre.getText(),
+                                    Double.parseDouble(mediaPrice.getText())));
+                            updateLibrary();
+                        }
+
+                    } else {
+                        if (isPositiveDouble(mediaPrice.getText())) {
+                            addMedia(new AudioBook(mediaName.getText(), mediaAuthor.getText(), mediaTime.getText(), mediaGenre.getText(),
+                                    Double.parseDouble(mediaPrice.getText())));
+                            updateLibrary();
+                        }
+
+                    }
+                }
+            }
+
+
+        }
+
+
+
+
+
+
+        if (e.getSource() == removeMediaButton) {
+//
+//            if (tabs.getSelectedIndex() == 3) {
+//                JOptionPane.showMessageDialog(null, "Please select a media from Movie Music or AudioBook Tab", null, JOptionPane.WARNING_MESSAGE);
+//            } else 
+
+
+            if (tabs.getSelectedIndex() == 0) {
+                selectedRow = movieTable.getSelectedRow();
+                if (movieTable.isRowSelected(selectedRow)) {
+                    removeMedia(movieTable.getValueAt(selectedRow, 1).toString(), "movie");
+//                    JOptionPane.showMessageDialog(null, movieTable.getValueAt(selectedRow, 1).toString() + " has been removed", null, JOptionPane.WARNING_MESSAGE);
+                    updateLibrary();
+                } else {
+                    JOptionPane.showMessageDialog(null, "Please select a media to be removed", null, JOptionPane.WARNING_MESSAGE);
+                }
+
+            } else if (tabs.getSelectedIndex() == 1) {
+                selectedRow = musicTable.getSelectedRow();
+                if (musicTable.isRowSelected(selectedRow)) {
+                    removeMedia(musicTable.getValueAt(selectedRow, 1).toString(), "music");
+//                    JOptionPane.showMessageDialog(null, musicTable.getValueAt(selectedRow, 1).toString() + " has been removed", null, JOptionPane.WARNING_MESSAGE);
+                    updateLibrary();
+                } else {
+                    JOptionPane.showMessageDialog(null, "Please select a media to be removed", null, JOptionPane.WARNING_MESSAGE);
+                }
+            } else if (tabs.getSelectedIndex() == 2) {
+                selectedRow = audioBookTable.getSelectedRow();
+                if (audioBookTable.isRowSelected(selectedRow)) {
+                    removeMedia(audioBookTable.getValueAt(selectedRow, 1).toString(), "audioBook");
+//                    JOptionPane.showMessageDialog(null, audioBookTable.getValueAt(selectedRow, 1).toString() + " has been removed", null, JOptionPane.WARNING_MESSAGE);
+                    updateLibrary();
+                } else {
+                    JOptionPane.showMessageDialog(null, "Please select a media to be removed", null, JOptionPane.WARNING_MESSAGE);
+                }
+            } else if (tabs.getSelectedIndex() == 3) {
+                selectedRow = searchTable.getSelectedRow();
+                if (searchTable.isRowSelected(selectedRow)) {
+                    removeMedia(searchTable.getValueAt(selectedRow, 2).toString(), searchTable.getValueAt(selectedRow, 1).toString());
+//                    JOptionPane.showMessageDialog(null, audioBookTable.getValueAt(selectedRow, 1).toString() + " has been removed", null, JOptionPane.WARNING_MESSAGE);
+                    updateLibrary();
+                } else {
+                    JOptionPane.showMessageDialog(null, "Please select a media to be removed", null, JOptionPane.WARNING_MESSAGE);
+                }
+            }
+
+
+
+
+
+        }
+
+
+
+        if (e.getSource() == checkPurchaseHistoryButton) {
+            selectedRow = userTable.getSelectedRow();
+            if (userTable.isRowSelected(selectedRow)) {
+
+                currentUserID = userTable.getValueAt(selectedRow, 1).toString();
+                updateCurrentUserResultSet();
+                System.out.println(currentUserID);
+//                userIndex = mediaStore1.foundCustomer(userTable.getValueAt(selectedRow, 1).toString());
+                checkPurchaseHistoryPanel = new JPanel();
+                checkPurchaseHistoryPanel.setLayout(new BorderLayout());
+                checkPurchaseHistoryPanel.setPreferredSize(new Dimension(900, 700));
+                updatePurchaseHistoryTable();
+                checkPurchaseHistoryPanel.add(purchaseHistoryScrollPane, BorderLayout.CENTER);
+//                checkPurchaseHistoryPanel.validate();
+                repaint();
+                JOptionPane.showConfirmDialog(userTab, checkPurchaseHistoryPanel, userTable.getValueAt(selectedRow, 1).toString() + ": Purchase History", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE);
+//                    mediaStore1.removeMediaButton(movieTable.getValueAt(selectedRow, 1).toString(), "movie");
+//                    JOptionPane.showMessageDialog(null, movieTable.getValueAt(selectedRow, 1).toString() + " has been removed", null, JOptionPane.WARNING_MESSAGE);
+//                    updateLibrary();
+            } else {
+                JOptionPane.showMessageDialog(null, "Please select a user", null, JOptionPane.WARNING_MESSAGE);
+            }
+
+
+
+
+
+
+        }
+
+
+        if (e.getSource() == depositeButton) {
+            String deposite = (String) JOptionPane.showInputDialog("How much to deposite", "100");
+            if (deposite != null) {
+                if (deposite.isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "Empty inputs is not allow", null, JOptionPane.WARNING_MESSAGE);
+                } else {
+
+                    if (isPositiveDouble(deposite)) {
+//                        mediaStore1.getCustomers().get(userIndex).deposit(Double.parseDouble(deposite));
+                        try {
+                            sql = String.format("update users set credit=credit+%f where user_id='%s'", Double.parseDouble(deposite), currentUserResultSet.getString("user_id"));
+                            dbStatement.execute(sql);
+                            updateCurrentUserResultSet();
+//                            sql = String.format("select * from users where user_id='%s'", currentUserID);
+//                            currentUserResultSet = dbStatement.executeQuery(sql);
+//
+//                            if (currentUserResultSet.next()) {
+////                                sql = String.format("select * from users where user_id='%s'", currentUserResultSet.getString("user_id"));
+////                                currentUserResultSet = currentUserStatement.executeQuery(sql);
+//                                userInfoLabel.setText(String.format("<html><br>User Information: </br> <br>Account ID: %s</br>  <br>Name: %s  </br>  <br>Credit %.2f</br> <br>Number of Purchase: %d  </br> <br>Address: %s  </br> </html>", currentUserResultSet.getString("user_id"), currentUserResultSet.getString("name"), currentUserResultSet.getDouble("credit"), currentUserResultSet.getInt("purchase_num"), currentUserResultSet.getString("address")));
+////                                System.out.println("NULL");
+//                            }
+
+
+                        } catch (SQLException ex) {
+                            ex.printStackTrace();
+                        }
+
+                    }
+
+
+                }
+
+
+            }
+
+        }
+
+
+
+        if (e.getSource() == purchaseMediaButton) {
+
+            if (tabs.getSelectedIndex() == 0) {
+                selectedRow = movieTable.getSelectedRow();
+                if (movieTable.isRowSelected(selectedRow)) {
+                    purchase(movieTable.getValueAt(selectedRow, 1).toString(), "movie");
+//                    JOptionPane.showMessageDialog(null, movieTable.getValueAt(selectedRow, 1).toString() + " has been removed", null, JOptionPane.WARNING_MESSAGE);
+
+                } else {
+                    JOptionPane.showMessageDialog(null, "Please select a media", null, JOptionPane.WARNING_MESSAGE);
+                }
+
+            } else if (tabs.getSelectedIndex() == 1) {
+                selectedRow = musicTable.getSelectedRow();
+                if (musicTable.isRowSelected(selectedRow)) {
+                    purchase(musicTable.getValueAt(selectedRow, 1).toString(), "music");
+//                    mediaStore1.getManager().removeMediaButton(mediaStore1.getMedias(), musicTable.getValueAt(selectedRow, 1).toString());
+//                    JOptionPane.showMessageDialog(null, musicTable.getValueAt(selectedRow, 1).toString() + " has been removed", null, JOptionPane.WARNING_MESSAGE);
+//                    updatePurchaseHistoryTab();
+//                    updateLibrary();
+//                    userInfoLabel.setText("<html><br>User Information: </br>" + mediaStore1.getCustomers().get(userIndex).toString() + "</html>");
+                } else {
+                    JOptionPane.showMessageDialog(null, "Please select a media", null, JOptionPane.WARNING_MESSAGE);
+                }
+            } else if (tabs.getSelectedIndex() == 2) {
+                selectedRow = audioBookTable.getSelectedRow();
+                if (audioBookTable.isRowSelected(selectedRow)) {
+                    purchase(audioBookTable.getValueAt(selectedRow, 1).toString(), "audioBook");
+
+//                    mediaStore1.getManager().removeMediaButton(mediaStore1.getMedias(), audioBookTable.getValueAt(selectedRow, 1).toString());
+//                    JOptionPane.showMessageDialog(null, audioBookTable.getValueAt(selectedRow, 1).toString() + " has been removed", null, JOptionPane.WARNING_MESSAGE);
+//                    updatePurchaseHistoryTab();
+//                    updateLibrary();
+//                    userInfoLabel.setText("<html><br>User Information: </br>" + mediaStore1.getCustomers().get(userIndex).toString() + "</html>");
+                } else {
+                    JOptionPane.showMessageDialog(null, "Please select a media", null, JOptionPane.WARNING_MESSAGE);
+                }
+            } else if (tabs.getSelectedIndex() == 3) {
+
+                selectedRow = searchTable.getSelectedRow();
+                if (searchTable.isRowSelected(selectedRow)) {
+                    purchase(searchTable.getValueAt(selectedRow, 2).toString(), searchTable.getValueAt(selectedRow, 1).toString());
+
+//                    mediaStore1.getManager().removeMediaButton(mediaStore1.getMedias(), audioBookTable.getValueAt(selectedRow, 1).toString());
+//                    JOptionPane.showMessageDialog(null, audioBookTable.getValueAt(selectedRow, 1).toString() + " has been removed", null, JOptionPane.WARNING_MESSAGE);
+//                    updatePurchaseHistoryTab();
+//                    updateLibrary();
+//                    userInfoLabel.setText("<html><br>User Information: </br>" + mediaStore1.getCustomers().get(userIndex).toString() + "</html>");
+                } else {
+                    JOptionPane.showMessageDialog(null, "Please select a media", null, JOptionPane.WARNING_MESSAGE);
+                }
+            }
+//            updatePurchaseHistoryTab();
+//            updateLibrary();
+//            userInfoLabel.setText("<html><br>User Information: </br>" + mediaStore1.getCustomers().get(userIndex).toString() + "</html>");
+
+        }
+
+
+        if (e.getSource() == mediaTypeJComboBox) {
+            if (mediaTypeJComboBox.getSelectedIndex() == 0) {
+                mediaYearOfReleasePanel.setVisible(true);
+            } else {
+                mediaYearOfReleasePanel.setVisible(false);
+
+            }
+
+        }
+
+
+        if (e.getSource() == giveRateButton) {
+//            if (tabs.getSelectedIndex() == 3) { // if one item is selected 
+
+            selectedRow = purchaseHistoryTable.getSelectedRow();
+            if (purchaseHistoryTable.isRowSelected(selectedRow)) {
+
+//                String feedBack = (String) JOptionPane.showInputDialog(null, "Rate this media", "Feedback", JOptionPane.PLAIN_MESSAGE, null, rateChoices, rateChoices[4]);
+//                if (feedBack != null) {
+                giveRate(purchaseHistoryTable.getValueAt(selectedRow, 2).toString(), purchaseHistoryTable.getValueAt(selectedRow, 1).toString());
+
+//                }
+
+
+
+            } else {
+                JOptionPane.showMessageDialog(null, "Please select a media", null, JOptionPane.WARNING_MESSAGE);
+
+            }
+//            } 
+//            else {
+//
+//                JOptionPane.showMessageDialog(null, "Please select Purchased Tab", null, JOptionPane.WARNING_MESSAGE);
+//            }
+        }
+    }
+
+    @Override
+    public void stateChanged(ChangeEvent e) {
+        if (e.getSource() == tabs) {
+            if (tabs.getTabCount() == 5) { //change only when login
+                if (accountTypeJComboBox.getSelectedIndex() == 0) {//user account
+                    //                purchaseFeedBackSwitchPanel.removeAll();
+                    //                purchaseFeedBackSwitchPanel.validate();
+                    //                constraints.gridy=2;
+                    if (tabs.getSelectedIndex() <= 3) {
+                        purchaseMediaButton.setVisible(true);
+                        giveRateButton.setVisible(false);
+//                        purchaseMediaButton.setEnabled(true);
+//                        giveRateButton.setEnabled(false);
+                        //                    purchaseFeedBackSwitchPanel.add(purchaseMediaButton);
+                        //                    accountPanel.add(purchaseFeedBackSwitchPanel,constraints);
+                    } else {
+                        purchaseMediaButton.setVisible(false);
+                        giveRateButton.setVisible(true);
+//                        purchaseMediaButton.setEnabled(false);
+//                        giveRateButton.setEnabled(true);
+                    }
+                } else { //manager account
+
+                    if (tabs.getSelectedIndex() <= 3) {
+                        removeMediaButton.setVisible(true);
+                        checkPurchaseHistoryButton.setVisible(false);
+//                        removeMediaButton.setEnabled(true);
+//                        checkPurchaseHistoryButton.setEnabled(false);
+                        //                    purchaseFeedBackSwitchPanel.add(purchaseMediaButton);
+                        //                    accountPanel.add(purchaseFeedBackSwitchPanel,constraints);
+                    } else {
+                        removeMediaButton.setVisible(false);
+                        checkPurchaseHistoryButton.setVisible(true);
+//                        removeMediaButton.setEnabled(false);
+//                        checkPurchaseHistoryButton.setEnabled(true);
+                    }
+
+
+
+                }
+            }
+
+
+        }
+//        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    public static void main(String[] args) {
+        try {
+            //star Derby engine
+//            Class.forName("org.apache.derby.jdbc.EmbeddedDriver").newInstance();
+
+
+
+            TopLevelGUI prog = new TopLevelGUI();
+
+//            prog.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+//            prog.addWindowListener(new WindowAdapter(){
+//                public void windowClosing(WindowEvent e) {
+//                    if() 
+//                    System.exit(0);
+//                }
+//            });
+            prog.setSize(1200, 800);
+            prog.setVisible(true);
+
+            //mediaStore1
+
+//            prog.mediaStore1.addMedia(new Movie("Skyfall0", "Sam Mendes", "2:23:00", "Action & Adverture", 2012, 14.99)); // test for add
+//            prog.mediaStore1.addMedia(new Movie("Skyfall1", "Sam Mendes", "2:23:00", "Action & Adverture", 2012, 14.99));
+//            prog.mediaStore1.addMedia(new Movie("Skyfall2", "Sam Mendes", "2:23:00", "Action & Adverture", 2012, 14.99));
+
+
+//            prog.mediaStore1.addCustomer(new Customer("jiz51180", "Jie Zheng", "Burrowes Street, State College", 200)); // test for addCustomerButton
+//            prog.mediaStore1.addCustomer(new Customer("jiz51181", "Jie Zheng", "Burrowes Street, State College", 200)); // test for addCustomerButton
+//            prog.mediaStore1.addCustomer(new Customer("jiz51182", "Jie Zheng", "Burrowes Street, State College", 200)); // test for addCustomerButton
+
+
+
+//            prog.mediaStore1.removeMedia("Skyfall0", "movie"); // test for remove
+//
+//            prog.mediaStore1.addMedia(new Music("Two Lanes of Freedom0", "Tim MCGraw", "43:24", "Country", 13.99));
+//            prog.mediaStore1.addMedia(new Music("Two Lanes of Freedom1", "Tim MCGraw", "43:24", "Country", 13.99));
+//            prog.mediaStore1.addMedia(new Music("Two Lanes of Freedom2", "Tim MCGraw", "43:24", "Country", 13.99));
+//
+//            prog.mediaStore1.addMedia(new AudioBook("American Sniper0", "Chris Kyle", "10:22", "Biography", 21.95));
+//            prog.mediaStore1.addMedia(new AudioBook("American Sniper1", "Chris Kyle", "10:22", "Biography", 21.95));
+//            prog.mediaStore1.addMedia(new AudioBook("American Sniper2", "Chris Kyle", "10:22", "Biography", 21.95));
+
+
+
+//            prog.mediaStore1.getCustomers().get(0).purchase(prog.mediaStore1.getMedias(), "Skyfall1", "movie"); // test for purchase
+//            prog.mediaStore1.getCustomers().get(0).purchase(prog.mediaStore1.getMedias(), "Skyfall2", "movie");
+//            prog.mediaStore1.getCustomers().get(0).purchase(prog.mediaStore1.getMedias(), "Two Lanes of Freedom0", "music");
+//            prog.mediaStore1.getCustomers().get(0).purchase(prog.mediaStore1.getMedias(), "Two Lanes of Freedom1", "music");
+//            prog.mediaStore1.getCustomers().get(0).purchase(prog.mediaStore1.getMedias(), "American Sniper0", "audioBook");
+//            prog.mediaStore1.getCustomers().get(0).purchase(prog.mediaStore1.getMedias(), "American Sniper2", "audioBook");
+//            prog.mediaStore1.getCustomers().get(1).purchase(prog.mediaStore1.getMedias(), "Skyfall1", "movie");
+//            prog.mediaStore1.getCustomers().get(2).purchase(prog.mediaStore1.getMedias(), "Skyfall1", "movie");
+
+
+//            prog.mediaStore1.CheckTotalNumberSold("Skyfall0", "movie"); // test CheckTotalNumberSold
+//            prog.mediaStore1.CheckTotalNumberSold("Skyfall1", "movie"); // test CheckTotalNumberSold
+//
+//            prog.mediaStore1.CheckTotalSale(); // test CheckTotalSale
+//
+//            prog.mediaStore1.RetrieveCustomerInfo("jiz51181"); // test RetrieveCustomerInfo
+//            prog.mediaStore1.RetrieveCustomerInfo("jiz51180"); // test RetrieveCustomerInfo
+//
+//            prog.mediaStore1.getCustomers().get(1).deposit(200); // test for depositeButton
+//            prog.mediaStore1.RetrieveCustomerInfo("jiz51181"); // test for depositeButton
+
+
+//            prog.updateLibrary();
+
+
+
+//        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+//            e.printStackTrace();
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+
+        } catch (ArrayIndexOutOfBoundsException aioobe) {
+            aioobe.printStackTrace();
+            System.out.println("You've entered an invalid array index.");
+        } catch (NullPointerException npe) {
+            System.out.println("No record exists at one of the entered indices.");
+//        } catch (InputMismatchException ime) {
+//            System.out.println("You must enter right formate input");
+        } catch (Exception e) {
+            e.printStackTrace();
+//            System.out.println("An unknown error occurred.");
+        }
+
+    }
+}

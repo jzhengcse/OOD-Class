@@ -1,0 +1,10 @@
+javac *.java  //--> build *.class
+java * //--> run *.class
+jar cvf *.class  //pack class
+appletviewer Applet.html //run applet
+
+
+<html>
+	<applet archieve="*.jar" code="DrawingPolygons.class" width="800" height="600">
+	</applet>
+</html>

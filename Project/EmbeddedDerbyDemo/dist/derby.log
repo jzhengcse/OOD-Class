@@ -1,0 +1,10 @@
+----------------------------------------------------------------
+Sat Apr 13 22:31:46 EDT 2013:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.8.1.2 - (1095077): instance a816c00e-013e-0662-4f9f-00000404a090 
+on database directory /Volumes/PROJECT/Java_NetBeans/EmbeddedDerbyDemo/dist/demoDB  with class loader sun.misc.Launcher$AppClassLoader@3cdc5434 
+Loaded from file:/Volumes/PROJECT/Java_NetBeans/EmbeddedDerbyDemo/dist/lib/derby.jar
+java.vendor=Oracle Corporation
+java.runtime.version=1.7.0_10-b18
+user.dir=/Volumes/PROJECT/Java_NetBeans/EmbeddedDerbyDemo/dist
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''

@@ -1,0 +1,10 @@
+----------------------------------------------------------------
+Mon Apr 15 14:43:28 EDT 2013:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.8.1.2 - (1095077): instance a816c00e-013e-0f02-4b58-000003d27730 
+on database directory /Volumes/PROJECT/Java_NetBeans/MediaStore_Phase3/MediaStoreDB  with class loader sun.misc.Launcher$AppClassLoader@36029483 
+Loaded from file:/Volumes/PROJECT/netbeans-7.3/NetBeansLib/derby.jar
+java.vendor=Oracle Corporation
+java.runtime.version=1.7.0_10-b18
+user.dir=/Volumes/PROJECT/Java_NetBeans/MediaStore_Phase3
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''
